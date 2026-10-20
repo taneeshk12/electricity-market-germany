@@ -1,7 +1,7 @@
 """Load the processed hourly data into the PostgreSQL star schema.
 
 Strategy (idempotent, all-or-nothing):
-1. Apply sql/01_schema.sql and sql/02_dim_date.sql (CREATE IF NOT EXISTS / upserts).
+1. Apply sql/01_schema.sql, 02_dim_date.sql and 03_views.sql (CREATE IF NOT EXISTS / upserts).
 2. Fill dim_date via the SQL procedure and cross-check holidays against Python's `holidays`.
 3. For dim_datetime and both facts: COPY the DataFrame into a temp staging table,
    upsert into the target (ON CONFLICT ... DO UPDATE, only where values changed),
@@ -29,7 +29,9 @@ from src.transform import GENERATION_FILE, PRICE_LOAD_FILE
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_FILES: tuple[Path, ...] = (config.SQL_DIR / "01_schema.sql", config.SQL_DIR / "02_dim_date.sql")
+SCHEMA_FILES: tuple[Path, ...] = tuple(
+    config.SQL_DIR / name for name in ("01_schema.sql", "02_dim_date.sql", "03_views.sql")
+)
 PEAK_HOURS = range(8, 20)  # 08:00–20:00 local, Mon–Fri
 
 

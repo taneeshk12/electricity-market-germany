@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 from src import config
+from src.reporting import df_to_markdown
 from src.transform import GENERATION_FILE, METADATA_FILE, PRICE_LOAD_FILE, REFERENCE_FILE
 
 logger = logging.getLogger(__name__)
@@ -40,20 +41,6 @@ class Report:
         self.sections.append(f"## {title}\n\n{body}\n")
 
 
-def _md(df: pd.DataFrame, index: bool = True) -> str:
-    """Render a DataFrame as a GitHub markdown table (no tabulate dependency)."""
-    if index:
-        df = df.reset_index()
-    if "year" in df.columns:
-        df["year"] = df["year"].astype(str)  # avoid "2,023" from thousands formatting
-    cols = [str(c) for c in df.columns]
-    lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
-    for row in df.itertuples(index=False):
-        cells = [f"{v:,.2f}" if isinstance(v, float) else f"{v:,}" if isinstance(v, int) else str(v) for v in row]
-        lines.append("| " + " | ".join(cells) + " |")
-    return "\n".join(lines)
-
-
 def check_row_counts(gen: pd.DataFrame, pl: pd.DataFrame, rep: Report) -> None:
     """Expected vs. actual hours per local year, and table sizes."""
     start, end = config.period_bounds_utc()
@@ -69,7 +56,7 @@ def check_row_counts(gen: pd.DataFrame, pl: pd.DataFrame, rep: Report) -> None:
     }).rename_axis("year")
     if not (table["expected_hours"] == table["price_load_rows"]).all():
         rep.critical.append("Hourly grid does not have the expected number of hours per year")
-    rep.add("1. Row counts", _md(table) + f"\n\n{n_sources} generation sources in long format.")
+    rep.add("1. Row counts", df_to_markdown(table) + f"\n\n{n_sources} generation sources in long format.")
 
 
 def check_dst(pl: pd.DataFrame, rep: Report) -> None:
@@ -81,7 +68,7 @@ def check_dst(pl: pd.DataFrame, rep: Report) -> None:
         rep.critical.append("Local days with != 24 hours that are not DST switch days")
     rep.add("2. Daylight saving time",
             "Local days with ≠ 24 hours (expected: last Sunday in March = 23h, October = 25h):\n\n"
-            + _md(odd) + f"\n\nAll irregular days are DST switch days: **{expected_odd}**.")
+            + df_to_markdown(odd) + f"\n\nAll irregular days are DST switch days: **{expected_odd}**.")
 
 
 def check_missing(gen: pd.DataFrame, pl: pd.DataFrame, rep: Report) -> None:
@@ -94,7 +81,7 @@ def check_missing(gen: pd.DataFrame, pl: pd.DataFrame, rep: Report) -> None:
     table.columns = [str(c) for c in table.columns]
     table = table.rename_axis("series")
 
-    body = _md(table)
+    body = df_to_markdown(table)
     nuc = gen[gen["source"] == "nuclear"].dropna(subset=["generation_mwh"])
     if not nuc.empty:
         last_pos = nuc.loc[nuc["generation_mwh"] > 0, "timestamp_local"].max()
@@ -116,7 +103,7 @@ def check_duplicates(gen: pd.DataFrame, pl: pd.DataFrame, meta: list[dict], rep:
         rep.critical.append("Duplicate keys found")
     rep.add("4. Duplicates",
             f"- generation (timestamp_utc, source): **{d_gen}**\n- price_load (timestamp_utc): **{d_pl}**\n\n"
-            "Raw quarter-hour chunks (non-numeric values like '-' are coerced to NaN and counted):\n\n" + _md(raw))
+            "Raw quarter-hour chunks (non-numeric values like '-' are coerced to NaN and counted):\n\n" + df_to_markdown(raw))
 
 
 def check_negative_generation(gen: pd.DataFrame, rep: Report) -> None:
@@ -125,7 +112,7 @@ def check_negative_generation(gen: pd.DataFrame, rep: Report) -> None:
     if neg.empty:
         body = "No negative generation values."
     else:
-        body = _md(neg.groupby("source")["generation_mwh"].agg(["count", "min"]))
+        body = df_to_markdown(neg.groupby("source")["generation_mwh"].agg(["count", "min"]))
         rep.warnings.append(f"{len(neg)} negative generation values")
     rep.add("5. Negative generation", body)
 
@@ -146,12 +133,12 @@ def check_prices(pl: pd.DataFrame, rep: Report) -> None:
     stats.columns = ["hours", "mean", "median", "min", "max", "negative_hours"]
     cols = ["timestamp_local", "price_eur_mwh"]
     body = (
-        _md(stats.rename_axis("year"))
+        df_to_markdown(stats.rename_axis("year"))
         + f"\n\n- Outside harmonised limits [{PRICE_FLOOR:.0f}, {PRICE_CAP:.0f}] EUR/MWh: **{out_of_limits}**"
         + f"\n- IQR outliers (outside [{lo:.2f}, {hi:.2f}], factor {IQR_FACTOR}): **{len(iqr_out)}** hours "
         "– kept, since price spikes and negative prices are real market outcomes and the focus of this analysis."
-        + "\n\nFive highest hours:\n\n" + _md(p.nlargest(5, "price_eur_mwh")[cols], index=False)
-        + "\n\nFive lowest hours:\n\n" + _md(p.nsmallest(5, "price_eur_mwh")[cols], index=False)
+        + "\n\nFive highest hours:\n\n" + df_to_markdown(p.nlargest(5, "price_eur_mwh")[cols], index=False)
+        + "\n\nFive lowest hours:\n\n" + df_to_markdown(p.nsmallest(5, "price_eur_mwh")[cols], index=False)
     )
     rep.add("6. Price plausibility and outliers", body)
 
@@ -177,7 +164,7 @@ def check_reconciliation(gen: pd.DataFrame, pl: pd.DataFrame, ref: pd.DataFrame,
         rep.critical.append("Hourly aggregation differs from SMARD hourly values beyond tolerance")
     rep.add("7. Reconciliation with SMARD hourly series",
             f"Our hourly values (aggregated from quarter-hours) vs. SMARD's own hourly series. "
-            f"Tolerance: {TOL_VOLUME_MWH} MWh for volumes, {TOL_PRICE_EUR} EUR/MWh for prices.\n\n" + _md(table))
+            f"Tolerance: {TOL_VOLUME_MWH} MWh for volumes, {TOL_PRICE_EUR} EUR/MWh for prices.\n\n" + df_to_markdown(table))
 
 
 def check_resolution(meta: list[dict], rep: Report) -> None:
@@ -190,7 +177,7 @@ def check_resolution(meta: list[dict], rep: Report) -> None:
             "which the four quarter-hour prices of an hour differ, i.e. when the day-ahead market switched "
             "to 15-minute products. Before that, SMARD repeats the hourly price in each quarter.\n\n"
             "Aggregation: volumes are summed, prices averaged (unweighted). An hour is only "
-            "built if all 4 quarters exist, otherwise it stays NaN.\n\n" + _md(df.fillna("–")))
+            "built if all 4 quarters exist, otherwise it stays NaN.\n\n" + df_to_markdown(df.fillna("–")))
 
 
 def check_balance(gen: pd.DataFrame, pl: pd.DataFrame, rep: Report) -> None:
@@ -200,7 +187,7 @@ def check_balance(gen: pd.DataFrame, pl: pd.DataFrame, rep: Report) -> None:
     table = pd.DataFrame({"generation_twh": g, "grid_load_twh": load, "generation_to_load": g / load}).rename_axis("year")
     rep.add("9. Plausibility: generation vs. grid load",
             "Totals in TWh. A ratio below 1 is plausible since Germany has been a net importer since 2023; "
-            "the gap also includes storage and measurement differences.\n\n" + _md(table))
+            "the gap also includes storage and measurement differences.\n\n" + df_to_markdown(table))
 
 
 def run() -> Report:
