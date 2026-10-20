@@ -1,0 +1,246 @@
+// =============================================================================
+// measures.dax – DAX measures for the "German electricity market" report
+//
+// Where to put them: create an empty table "_Measures" (Home > Enter data > OK)
+// and add each measure there (Modeling > New measure). Copy one block at a time:
+// the line "Name =" plus its expression. Display folders are suggested in [brackets].
+//
+// Model assumptions (see powerbi/report_spec.md, section "Data model"):
+//   fact_hourly      -> dim_date, dim_hour, dim_source, dim_datetime   (many-to-one, single direction)
+//   fact_price_load  -> dim_date, dim_hour, dim_datetime                (many-to-one, single direction)
+//   dim_date is marked as date table on dim_date[date].
+//
+// Units: generation/consumption in MWh per hour, prices in EUR/MWh.
+// Expected values to validate against SQL are given as "Check:" (from docs/analysis_results.md).
+// =============================================================================
+
+
+// ---------------------------------------------------------------- [1 Generation]
+
+// Sum of net generation over all sources in the current filter context (MWh).
+Total Generation MWh =
+SUM ( fact_hourly[generation_mwh] )
+
+// Same in TWh for KPI cards (1 TWh = 1,000,000 MWh). Check: 2023 = 454.7
+Total Generation TWh =
+DIVIDE ( [Total Generation MWh], 1000000 )
+
+// Generation from renewable sources (wind, solar, biomass, hydro, other renewables).
+Renewable Generation MWh =
+CALCULATE ( [Total Generation MWh], dim_source[category] = "renewable" )
+
+// Weather-dependent part of renewables (wind onshore, wind offshore, solar).
+Variable Renewable Generation MWh =
+CALCULATE ( [Total Generation MWh], dim_source[is_variable_renewable] = TRUE () )
+
+// Renewable share of net generation, energy-weighted (sum / sum, never an average of hourly shares).
+// REMOVEFILTERS on dim_source keeps the denominator = all sources, even if a source slicer is used.
+// Check: 2023 = 55.5 %, 2024 = 58.6 %, 2025 = 58.9 %
+Renewable Share % =
+DIVIDE (
+    [Renewable Generation MWh],
+    CALCULATE ( [Total Generation MWh], REMOVEFILTERS ( dim_source ) )
+)
+
+// Share of the selected source(s) in total generation – use with dim_source on a legend/axis.
+Source Share % =
+DIVIDE (
+    [Total Generation MWh],
+    CALCULATE ( [Total Generation MWh], REMOVEFILTERS ( dim_source ) )
+)
+
+
+// ---------------------------------------------------------------- [2 Demand]
+
+// Number of hours with a price in the current context (basis for hourly averages).
+Hours =
+COUNTROWS ( fact_price_load )
+
+// Grid load (Netzlast) in TWh. Check: 2024 = 470.4
+Total Consumption TWh =
+DIVIDE ( SUM ( fact_price_load[consumption_mwh] ), 1000000 )
+
+// Average load in GW: MWh per hour equals average MW, /1000 -> GW.
+Avg Load GW =
+DIVIDE ( SUM ( fact_price_load[consumption_mwh] ), [Hours] ) / 1000
+
+// Average solar and wind feed-in in GW (for the daily profile charts).
+// REMOVEFILTERS(dim_source) first, so a source slicer can't silently change these.
+Avg Solar GW =
+DIVIDE (
+    CALCULATE ( [Total Generation MWh], REMOVEFILTERS ( dim_source ), dim_source[source_name] = "solar" ),
+    [Hours]
+) / 1000
+
+Avg Wind GW =
+DIVIDE (
+    CALCULATE (
+        [Total Generation MWh],
+        REMOVEFILTERS ( dim_source ),
+        dim_source[source_name] IN { "wind_onshore", "wind_offshore" }
+    ),
+    [Hours]
+) / 1000
+
+// Residual load = demand not covered by wind and solar; the main price driver
+// (SQL: correlation with price 0.83). Average in GW.
+Avg Residual Load GW =
+DIVIDE (
+    SUM ( fact_price_load[consumption_mwh] )
+        - CALCULATE ( [Variable Renewable Generation MWh], REMOVEFILTERS ( dim_source ) ),
+    [Hours]
+) / 1000
+
+
+// ---------------------------------------------------------------- [3 Price]
+
+// Time-weighted (base-load) average day-ahead price: every hour counts equally.
+// This is the standard "baseload price". Check: 2023 = 95.18, 2024 = 78.51, 2025 = 89.32
+Avg Price =
+AVERAGE ( fact_price_load[price_eur_mwh] )
+
+// Load-weighted average price: hours with high demand count more, i.e. what an
+// average MWh of consumption cost. Check: 2023 = 98.31, 2025 = 92.42
+Load-Weighted Avg Price =
+DIVIDE (
+    SUMX ( fact_price_load, fact_price_load[price_eur_mwh] * fact_price_load[consumption_mwh] ),
+    SUM ( fact_price_load[consumption_mwh] )
+)
+
+Min Price =
+MIN ( fact_price_load[price_eur_mwh] )
+
+Max Price =
+MAX ( fact_price_load[price_eur_mwh] )
+
+// Peak = Mon–Fri 08:00–20:00 local (EEX definition, flag in dim_datetime).
+// Check: 2023 = 106.24, 2024 = 87.85, 2025 = 92.35
+Peak Price =
+CALCULATE ( [Avg Price], dim_datetime[is_peak] = TRUE () )
+
+// Everything outside the peak window, incl. weekends. Check: 2023 = 89.06, 2025 = 87.64
+Off-Peak Price =
+CALCULATE ( [Avg Price], dim_datetime[is_peak] = FALSE () )
+
+// Peak premium in EUR/MWh. Shrinks as midday solar pushes down peak hours
+// (2023: 17.18 -> 2025: 4.71).
+Peak vs Off-Peak Spread =
+[Peak Price] - [Off-Peak Price]
+
+// Rolling 7-day average price ending on the latest date in context.
+// Returns BLANK if fewer than 7 days of data exist in the window (same rule as the SQL query).
+// Note: averages the 168 hourly prices (DST weeks: 167/169), which equals the average of the
+// daily averages except in DST weeks. Check: 2024-12-14 = 184.31
+Rolling 7-Day Avg Price =
+VAR _end = MAX ( dim_date[date] )
+VAR _window = DATESINPERIOD ( dim_date[date], _end, -7, DAY )
+VAR _daysWithData =
+    CALCULATE ( DISTINCTCOUNT ( fact_price_load[date_key] ), _window )
+RETURN
+    IF ( _daysWithData = 7, CALCULATE ( [Avg Price], _window ) )
+
+
+// ---------------------------------------------------------------- [4 Negative prices]
+
+// Hours with a negative day-ahead price. Since 2025-10-01 an hour's price is the mean of
+// four 15-minute prices, so single negative quarter-hours are not counted.
+// Check: 2023 = 301, 2024 = 457, 2025 = 576
+Negative Price Hours =
+CALCULATE ( [Hours], fact_price_load[price_eur_mwh] < 0 )
+
+// Share of hours with a negative price. Check: all years = 5.07 %, public holidays = 17.75 %
+Negative Price Share % =
+DIVIDE ( [Negative Price Hours], [Hours] )
+
+// Average price within negative hours only (how deep prices fall).
+Avg Negative Price =
+CALCULATE ( [Avg Price], fact_price_load[price_eur_mwh] < 0 )
+
+
+// ---------------------------------------------------------------- [5 Time intelligence]
+
+// Previous-year values via SAMEPERIODLASTYEAR (needs the marked date table).
+// BLANK for 2023, because there is no 2022 data in the model.
+Avg Price PY =
+CALCULATE ( [Avg Price], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+
+// YoY change of the average price. Check: 2024 = -17.5 %, 2025 = +13.8 %
+Avg Price YoY % =
+DIVIDE ( [Avg Price] - [Avg Price PY], [Avg Price PY] )
+
+Renewable Share PY =
+CALCULATE ( [Renewable Share %], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+
+// Change of a share is shown in percentage points (pp), not in %. Check: 2024 = +3.1 pp
+// Format as decimal number with 1 decimal; values are already multiplied by 100.
+Renewable Share YoY pp =
+IF (
+    NOT ISBLANK ( [Renewable Share PY] ),
+    ( [Renewable Share %] - [Renewable Share PY] ) * 100
+)
+
+Negative Price Hours PY =
+CALCULATE ( [Negative Price Hours], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+
+// Check: 2024 = +51.8 %, 2025 = +26.0 %
+Negative Price Hours YoY % =
+DIVIDE ( [Negative Price Hours] - [Negative Price Hours PY], [Negative Price Hours PY] )
+
+
+// =============================================================================
+// CALCULATED COLUMNS (Modeling > New column, with the named table selected)
+// They mirror the SQL logic so Power BI and sql/analysis/ give identical results.
+// =============================================================================
+
+// --- Table dim_date --------------------------------------------------------------
+// Day type for the negative-price analysis; holidays take precedence over weekends
+// (same rule as sql/analysis/09_negative_hours_by_day_type.sql).
+Day Type =
+SWITCH (
+    TRUE (),
+    dim_date[is_public_holiday], "Public holiday",
+    dim_date[weekday] = 7, "Sunday",
+    dim_date[weekday] = 6, "Saturday",
+    "Weekday"
+)
+
+// Sort helper for Day Type (Column tools > Sort by column: Day Type -> Day Type Order).
+Day Type Order =
+SWITCH ( dim_date[Day Type], "Weekday", 1, "Saturday", 2, "Sunday", 3, "Public holiday", 4 )
+
+// --- Table dim_datetime ----------------------------------------------------------
+// Renewable share of this single hour. CALCULATE triggers context transition, so the
+// current row's timestamp_key filters fact_hourly through the relationship.
+Hourly Renewable Share =
+DIVIDE (
+    CALCULATE ( SUM ( fact_hourly[generation_mwh] ), dim_source[category] = "renewable" ),
+    CALCULATE ( SUM ( fact_hourly[generation_mwh] ) )
+)
+
+// 20 %-buckets as in sql/analysis/03_price_by_renewable_share_bucket.sql.
+Renewable Share Bucket =
+VAR s = dim_datetime[Hourly Renewable Share]
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( s ), BLANK (),
+        s < 0.2, "0–20 %",
+        s < 0.4, "20–40 %",
+        s < 0.6, "40–60 %",
+        s < 0.8, "60–80 %",
+        "80–100 %"
+    )
+
+// --- Table fact_price_load ---------------------------------------------------------
+// Price sign, to compare market conditions in negative vs. other hours.
+Price Sign =
+IF ( fact_price_load[price_eur_mwh] < 0, "Negative", "Zero or positive" )
+
+
+// ---------------------------------------------------------------- [6 Labels]
+
+// Dynamic subtitle for the overview page, e.g. "2023-01-01 – 2025-12-31 · 26,304 hours".
+Selection Label =
+FORMAT ( MIN ( dim_date[date] ), "yyyy-MM-dd" ) & " – "
+    & FORMAT ( MAX ( dim_date[date] ), "yyyy-MM-dd" ) & " · "
+    & FORMAT ( [Hours], "#,0" ) & " hours"
