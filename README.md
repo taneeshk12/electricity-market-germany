@@ -38,7 +38,7 @@ cp .env.example .env          # then set a password
 make venv                     # create .venv and install requirements
 make db-up                    # start PostgreSQL 16 on localhost:5433
 make db-shell                 # optional: open psql
-make pipeline                 # extract -> transform -> quality checks (load follows in Phase 3)
+make pipeline                 # extract -> transform -> quality checks -> load into PostgreSQL
 ```
 
 ## Repository structure

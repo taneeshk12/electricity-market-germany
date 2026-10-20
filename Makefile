@@ -10,9 +10,9 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help venv db-up db-down db-reset db-shell db-logs pipeline extract transform quality
+.PHONY: help venv db-up db-down db-reset db-shell db-logs pipeline extract transform quality load
 
-pipeline:  ## Run the full pipeline (extract -> transform -> quality)
+pipeline:  ## Run the full pipeline (extract -> transform -> quality -> load)
 	$(PY) run_pipeline.py
 
 extract:  ## Download raw SMARD data (skips chunks already on disk)
@@ -23,6 +23,9 @@ transform:  ## Clean + aggregate raw data to hourly parquet files
 
 quality:  ## Run data quality checks -> docs/data_quality_report.md
 	$(PY) run_pipeline.py --steps quality
+
+load:  ## Load processed data into the PostgreSQL star schema (idempotent)
+	$(PY) run_pipeline.py --steps load
 
 help:  ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
