@@ -1,0 +1,34 @@
+# Secrets
+.env
+
+# Data (raw files are large and subject to SMARD terms; processed files are reproducible)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Power BI (binary report files can be large; keep the spec + DAX in git instead)
+*.pbix
+*.pbit
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
