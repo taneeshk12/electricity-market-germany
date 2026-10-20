@@ -8,10 +8,24 @@ PY     := $(VENV)/bin/python
 -include .env
 export
 
-.PHONY: help venv db-up db-down db-reset db-shell db-logs
+.DEFAULT_GOAL := help
+
+.PHONY: help venv db-up db-down db-reset db-shell db-logs pipeline extract transform quality
+
+pipeline:  ## Run the full pipeline (extract -> transform -> quality)
+	$(PY) run_pipeline.py
+
+extract:  ## Download raw SMARD data (skips chunks already on disk)
+	$(PY) run_pipeline.py --steps extract
+
+transform:  ## Clean + aggregate raw data to hourly parquet files
+	$(PY) run_pipeline.py --steps transform
+
+quality:  ## Run data quality checks -> docs/data_quality_report.md
+	$(PY) run_pipeline.py --steps quality
 
 help:  ## Show available targets
-	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
+	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-10s %s\n", $$1, $$2}'
 
 venv:  ## Create virtualenv and install dependencies
 	$(PYTHON) -m venv $(VENV)
