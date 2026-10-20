@@ -1,0 +1,5 @@
+year,corr_price_renewable_share,corr_price_wind_solar,corr_price_load,corr_price_residual_load,eur_per_gw_wind_solar,eur_per_gw_residual_load,r2_residual_load
+2023,-0.793,-0.634,0.378,0.867,-2.3,3.03,0.752
+2024,-0.723,-0.607,0.272,0.789,-2.36,3.06,0.623
+2025,-0.79,-0.706,0.346,0.876,-2.58,3.02,0.768
+All years,-0.765,-0.644,0.323,0.834,-2.42,3.03,0.696

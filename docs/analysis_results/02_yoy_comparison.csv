@@ -1,0 +1,4 @@
+year,avg_price_eur_mwh,avg_price_yoy_pct,renewable_share_pct,renewable_share_yoy_pp,generation_twh,load_twh,load_yoy_pct,negative_hours,negative_hours_yoy_pct
+2023,95.18,,55.5,,454.7,463.1,,301,
+2024,78.51,-17.5,58.6,3.1,438.9,470.4,1.6,457,51.8
+2025,89.32,13.8,58.9,0.3,439.3,470.7,0.1,576,26.0

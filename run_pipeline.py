@@ -10,7 +10,7 @@ import logging
 import time
 from collections.abc import Callable
 
-from src import config, extract, load, quality_checks, transform
+from src import config, extract, load, quality_checks, run_analysis, transform
 
 logger = logging.getLogger("pipeline")
 
@@ -19,6 +19,7 @@ STEPS: dict[str, Callable[[], None]] = {
     "transform": transform.main,
     "quality": quality_checks.main,  # stops the pipeline on critical issues
     "load": load.main,
+    "analysis": run_analysis.main,
 }
 
 

@@ -1,0 +1,6 @@
+day_type,hours,negative_hours,negative_share_pct,load_gw_when_negative,load_gw_otherwise,solar_gw_when_negative,wind_gw_when_negative,residual_load_gw_when_negative,residual_load_gw_otherwise
+Public holiday,648,115,17.75,43.3,44.2,16.4,24.3,2.5,23.4
+Sunday,3744,490,13.09,44.5,45.5,23.4,17.1,4.0,25.2
+Saturday,3744,273,7.29,47.6,48.2,29.2,15.3,3.2,27.0
+Weekday,18168,456,2.51,55.5,56.5,28.4,22.1,5.0,34.0
+All days,26304,1334,5.07,48.8,53.6,25.7,19.1,4.0,31.6

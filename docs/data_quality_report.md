@@ -1,6 +1,6 @@
 # Data quality report
 
-Generated: 2026-10-20 21:33 UTC · Source: SMARD.de – Bundesnetzagentur | Strommarktdaten (chart-data API) · region DE-LU · retrieved 2026-10-20T21:33:07+00:00 · period 2023-01-01 – 2025-12-31
+Generated: 2026-10-20 21:47 UTC · Source: SMARD.de – Bundesnetzagentur | Strommarktdaten (chart-data API) · region DE-LU · retrieved 2026-10-20T21:33:07+00:00 · period 2023-01-01 – 2025-12-31
 
 **Status: ⚠️ PASSED with warnings**
 

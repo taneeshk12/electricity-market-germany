@@ -1,0 +1,21 @@
+list,rank,date,weekday_name,holiday,avg_price_eur_mwh,renewable_share_pct,avg_wind_gw,avg_solar_gw
+most expensive,1,2024-12-12,Thursday,,395.34,18.5,1.5,0.6
+most expensive,2,2024-12-11,Wednesday,,266.54,20.1,2.5,0.5
+most expensive,3,2025-01-20,Monday,,231.36,28.7,5.0,3.2
+most expensive,4,2024-11-06,Wednesday,,231.09,18.5,0.3,1.5
+most expensive,5,2025-01-15,Wednesday,,222.18,27.9,7.6,1.0
+most expensive,6,2025-11-25,Tuesday,,220.52,24.9,5.5,1.3
+most expensive,7,2023-01-23,Monday,,202.73,21.7,5.3,0.6
+most expensive,8,2023-01-24,Tuesday,,202.69,19.3,3.7,0.5
+most expensive,9,2024-12-04,Wednesday,,182.47,29.4,7.3,1.5
+most expensive,10,2023-01-25,Wednesday,,181.74,19.9,4.5,0.3
+cheapest,1,2023-07-02,Sunday,,-53.87,79.1,23.0,10.7
+cheapest,2,2023-12-24,Sunday,,-3.37,81.8,40.2,0.5
+cheapest,3,2025-10-04,Saturday,,-0.29,86.5,39.4,3.6
+cheapest,4,2023-12-25,Monday,Christmas Day,0.41,79.2,35.3,1.2
+cheapest,5,2025-01-01,Wednesday,New Year's Day,0.95,80.6,40.6,2.4
+cheapest,6,2025-10-05,Sunday,,1.73,86.0,38.8,4.9
+cheapest,7,2024-05-12,Sunday,,1.78,76.6,12.0,15.5
+cheapest,8,2024-11-24,Sunday,,3.97,80.8,41.3,2.2
+cheapest,9,2024-05-01,Wednesday,Labour Day,4.39,79.1,17.7,14.4
+cheapest,10,2023-12-29,Friday,,6.36,81.5,44.4,1.3
