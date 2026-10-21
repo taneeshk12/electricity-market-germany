@@ -17,7 +17,7 @@
 actual generation by source, actual consumption (grid load), day-ahead prices.
 Period: 2023-01-01 – 2025-12-31.
 
-*Attribution and terms of use: TBD (Phase 6).*
+Data source: **Bundesnetzagentur | SMARD.de**. Raw data is not redistributed in this repository; the pipeline downloads it from SMARD. *Full terms of use: TBD (Phase 6).*
 
 ## Architecture
 
