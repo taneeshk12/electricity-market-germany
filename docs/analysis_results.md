@@ -1,6 +1,6 @@
 # Analysis results
 
-Generated 2026-10-20 21:48 UTC from the PostgreSQL star schema by `src/run_analysis.py`.
+Generated 2026-10-21 12:09 UTC from the PostgreSQL star schema by `src/run_analysis.py`.
 
 ## 01_monthly_renewable_share
 
@@ -308,3 +308,16 @@ Query: [`sql/analysis/10_daily_profile_summer_winter.sql`](../sql/analysis/10_da
 | Summer | 15:00 | 32.66 | 53.10 | 29.10 | 10.80 | 13.20 | 27.20 |
 
 *Showing 40 of 48 rows – full result in `analysis_results/10_daily_profile_summer_winter.csv`.*
+
+## 11_peak_offpeak_by_year
+
+Peak vs. off-peak price per year. Peak = Mon–Fri 08:00–20:00 local (EEX definition, dim_datetime.is_peak). Also shows the load-weighted price (what an average consumed MWh cost) next to the time-weighted average.
+
+Query: [`sql/analysis/11_peak_offpeak_by_year.sql`](../sql/analysis/11_peak_offpeak_by_year.sql)
+
+| year | peak_price_eur_mwh | offpeak_price_eur_mwh | peak_spread_eur_mwh | avg_price_eur_mwh | load_weighted_price_eur_mwh |
+|---|---|---|---|---|---|
+| 2023 | 106.24 | 89.06 | 17.18 | 95.18 | 98.31 |
+| 2024 | 87.85 | 73.30 | 14.55 | 78.51 | 80.98 |
+| 2025 | 92.35 | 87.64 | 4.71 | 89.32 | 92.42 |
+| All years | 95.46 | 83.33 | 12.13 | 87.66 | 90.53 |

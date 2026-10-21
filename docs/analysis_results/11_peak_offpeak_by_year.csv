@@ -1,0 +1,5 @@
+year,peak_price_eur_mwh,offpeak_price_eur_mwh,peak_spread_eur_mwh,avg_price_eur_mwh,load_weighted_price_eur_mwh
+2023,106.24,89.06,17.18,95.18,98.31
+2024,87.85,73.3,14.55,78.51,80.98
+2025,92.35,87.64,4.71,89.32,92.42
+All years,95.46,83.33,12.13,87.66,90.53
