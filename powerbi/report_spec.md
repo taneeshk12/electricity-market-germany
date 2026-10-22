@@ -95,7 +95,7 @@ dim_source filters only fact_hourly; price measures ignore a source slicer, whic
 | 3.2 | Clustered column chart | X: `dim_date[month_name]` (sorted by `month`); Y: `[Negative Price Hours]`; Legend: `dim_date[year]` | – | In which months do negative prices occur, and is it getting more frequent? |
 | 3.3 | Matrix (heatmap) | Rows: `dim_hour[hour_label]`; Columns: `dim_date[month_name]`; Values: `[Negative Price Hours]` | Conditional formatting: background, white → dark blue | At what time of day, and in which season? (midday in spring/summer vs. night in winter) |
 | 3.4 | Bar chart | Y: `dim_date[Day Type]` (sorted by `Day Type Order`); X: `[Negative Price Share %]` | Data labels on | Are weekends and holidays more exposed? |
-| 3.5 | Clustered column chart | X: `fact_price_load[Price Sign]`; Y: `[Avg Load GW]`, `[Avg Solar GW]`, `[Avg Wind GW]`, `[Avg Residual Load GW]` | – | **Why** – what do market conditions look like in negative hours compared with other hours? |
+| 3.5 | Clustered column chart | X: `dim_datetime[Price Sign]`; Y: `[Avg Load GW]`, `[Avg Solar GW]`, `[Avg Wind GW]`, `[Avg Residual Load GW]` | – | **Why** – what do market conditions look like in negative hours compared with other hours? |
 | 3.6 | Table | `dim_date[date]`, `dim_date[weekday_name]`, `dim_date[holiday_name]`, `[Avg Price]`, `[Renewable Share %]`, `[Negative Price Hours]` | Filter: Top N = 10 by `[Avg Price]`, **bottom** | Which were the cheapest days and what did they have in common? |
 | 3.7 | Text box | 2–3 sentence takeaway written from the visuals (numbers from `docs/analysis_results.md`) | – | What is the business takeaway? |
 

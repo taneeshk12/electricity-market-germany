@@ -77,7 +77,7 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO powerbi_read
    column `x`. Formats can be set for several measures at once: Model view, Ctrl+click the measures,
    Properties pane > Formatting.
 7. **Calculated columns:** add `Day Type` and `Day Type Order` (dim_date), `Hourly Renewable Share`
-   and `Renewable Share Bucket` (dim_datetime), and `Price Sign` (fact_price_load) from the same
+   and `Renewable Share Bucket` (dim_datetime), and `Price Sign` (dim_datetime) from the same
    file (Modeling > New column). Set *Sort by column* for `Day Type` to `Day Type Order`.
 8. **Formats** (Measure tools): shares as Percentage with 1 decimal, prices as decimals with 2
    places, `Renewable Share YoY pp` as decimal with 1 place.

@@ -231,10 +231,11 @@ RETURN
         "80–100 %"
     )
 
-// --- Table fact_price_load ---------------------------------------------------------
-// Price sign, to compare market conditions in negative vs. other hours.
+// Price sign of this hour, to compare market conditions in negative vs. other hours.
+// Lives on dim_datetime (not fact_price_load) so it filters BOTH facts: on fact_price_load,
+// wind/solar from fact_hourly would ignore it and be divided by the wrong number of hours.
 Price Sign =
-IF ( fact_price_load[price_eur_mwh] < 0, "Negative", "Zero or positive" )
+IF ( CALCULATE ( MIN ( fact_price_load[price_eur_mwh] ) ) < 0, "Negative", "Zero or positive" )
 
 
 // ---------------------------------------------------------------- [6 Labels]
