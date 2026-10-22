@@ -6,7 +6,7 @@ Power BI Desktop runs **only on Windows**. The database runs in Docker on the Ma
 
 | Option | Server address to use in Power BI |
 |---|---|
-| Windows VM on the Mac (Parallels, VMware Fusion, UTM) | The Mac as seen from the VM, e.g. Parallels "Shared network": `10.211.55.2:5433`. Find it in Windows with `ipconfig` (default gateway). |
+| Windows VM on the Mac (Parallels, VMware Fusion, UTM) | The Mac as seen from the VM: UTM "Shared Network" `192.168.64.1:5433`, Parallels "Shared network" `10.211.55.2:5433`. Find it in Windows with `ipconfig` (default gateway). |
 | Separate Windows PC in the same network | The Mac's LAN IP (System Settings > Network), e.g. `192.168.1.20:5433` |
 | Everything on one Windows machine | Run the pipeline there too, then use `localhost:5433` |
 
@@ -32,7 +32,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO powerbi_read
 
 ## 2. Connect
 
-1. Power BI Desktop > **Home > Get data > More… > Database > PostgreSQL database**.
+1. Power BI Desktop > **Home > Get data > More… > Database > PostgreSQL database**. Not "SQL Server
+   database": that one fails with *"error occurred during the pre-login handshake… forcibly closed"*.
 2. **Server:** `<address>:5433` (address from step 0). **Database:** `electricity`.
    **Data connectivity mode:** *Import*. Click OK.
 3. Credentials: choose the **Database** tab, user `powerbi_reader` (or `emg`), and the password.
@@ -68,9 +69,13 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO powerbi_read
    - `dim_hour[hour_label]` by `dim_hour[hour_key]`
 5. **Hide** in report view (right-click > Hide in report view): all `*_key` columns in the two fact
    tables, `dim_source[smard_filter_id]`, and `dim_datetime[timestamp_utc]`.
-6. **Measures:** Home > *Enter data* > name the table `_Measures` > Load. Add every measure from
-   [`measures.dax`](measures.dax) (Modeling > New measure), then delete the dummy column. Put
-   measures in the suggested display folders (Properties pane).
+6. **Measures:** create the measure table with Modeling > *New table* > `_Measures = ROW ( "x", 1 )`
+   (or Home > *Enter data* > name it `_Measures` > Load). Then add all measures in one go: paste
+   [`add_measures_query.dax`](add_measures_query.dax) into **DAX query view**, click *Run*, then
+   *Update model with changes*. If that button stays at (0), add them one by one from
+   [`measures.dax`](measures.dax) (select `_Measures` > Table tools > New measure). Hide the dummy
+   column `x`. Formats can be set for several measures at once: Model view, Ctrl+click the measures,
+   Properties pane > Formatting.
 7. **Calculated columns:** add `Day Type` and `Day Type Order` (dim_date), `Hourly Renewable Share`
    and `Renewable Share Bucket` (dim_datetime), and `Price Sign` (fact_price_load) from the same
    file (Modeling > New column). Set *Sort by column* for `Day Type` to `Day Type Order`.
@@ -86,5 +91,9 @@ results. If one doesn't, it's almost always a relationship (step 4.2) or the dat
 ## 6. Refresh after re-running the pipeline
 
 `make pipeline` reloads the database idempotently; then press **Home > Refresh** in Power BI.
-Save the report as `powerbi/electricity_market.pbix`. `.pbix` files are gitignored, so commit
-screenshots (e.g. `docs/img/page1.png`) instead.
+Save the report as a **Power BI project**: File > Save as > *Power BI project files (\*.pbip)* >
+`powerbi/electricity_market.pbip`. The `.pbip` stores report and model as text (TMDL), so it can be
+committed and diffed; Power BI's own `.gitignore` inside the project keeps the data cache out.
+`.pbix` files are gitignored. Commit screenshots to `docs/img/` (`page1_overview.png`,
+`page2_price_drivers.png`, `page3_negative_prices.png`) and the PDF export
+(File > Export > Export to PDF) as `docs/electricity_market_report.pdf`.

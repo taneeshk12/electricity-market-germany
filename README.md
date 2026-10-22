@@ -50,6 +50,24 @@ and 4.71 € (2025)**, because many "peak" hours now fall into the solar midday 
 > yet the average price rose by 13.8 % compared with 2024 (78.51 → 89.32 €/MWh). Fuel and CO₂ prices, which are likely drivers,
 > are not part of this dataset; see [Limitations](#limitations).
 
+## Power BI report
+
+Three pages on top of the PostgreSQL star schema (import mode, 30 DAX measures, 7 relationships).
+The full report is in [`docs/electricity_market_report.pdf`](docs/electricity_market_report.pdf), and the
+Power BI project (`.pbip`, text-based, so it can be diffed) is in [`powerbi/`](powerbi/).
+
+**Overview:** renewable share, generation mix and price trend, with year-over-year KPIs.
+
+![Overview page](docs/img/page1_overview.png)
+
+**Price drivers:** renewable share vs. price, hour × weekday price heatmap, summer vs. winter daily profile.
+
+![Price drivers page](docs/img/page2_price_drivers.png)
+
+**Negative prices:** when they occur (month, hour, day type) and what market conditions look like in those hours.
+
+![Negative prices page](docs/img/page3_negative_prices.png)
+
 ## Architecture
 
 ```mermaid
@@ -130,7 +148,7 @@ idempotent. Run single steps with `make extract|transform|quality|load|analysis`
 │   ├── 02_dim_date.sql     calendar + German public holidays
 │   ├── 03_views.sql        hourly analysis view
 │   └── analysis/           11 commented analysis queries
-├── powerbi/                DAX measures, report spec, setup guide
+├── powerbi/                Power BI project (.pbip), DAX measures, report spec, setup guide
 ├── docs/                   architecture, data model, quality report, analysis results
 ├── run_pipeline.py         one command for the whole pipeline
 ├── docker-compose.yml · Makefile · requirements.txt · .env.example
