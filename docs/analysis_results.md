@@ -1,6 +1,6 @@
 # Analysis results
 
-Generated 2026-10-21 12:09 UTC from the PostgreSQL star schema by `src/run_analysis.py`.
+Generated 2026-10-21 14:03 UTC from the PostgreSQL star schema by `src/run_analysis.py`.
 
 ## 01_monthly_renewable_share
 
