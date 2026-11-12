@@ -45,18 +45,31 @@ def coverage() -> dict:
     return get_available_date_range()
 
 
+COUNT_COLUMNS = ("hours", "total_hours", "n", "count", "row_count")
+
+
+def chart_columns(df: pd.DataFrame) -> list[str]:
+    """Numeric columns worth plotting against the first column (may be empty)."""
+    if len(df) < 2 or len(df.columns) < 2:
+        return []
+    first = df.columns[0]
+    y = [c for c in df.columns[1:] if pd.api.types.is_numeric_dtype(df[c])]
+    # Skip plain size/count columns (e.g. total_hours) when something more informative exists.
+    y = [c for c in y if c.lower() not in COUNT_COLUMNS] or y
+    if not y or first in y:
+        return []
+    # Keep only columns on a scale comparable to the first, so one large column can't flatten the rest.
+    ref = float(df[y[0]].abs().max()) or 1.0
+    return [c for c in y if 0.1 <= float(df[c].abs().max()) / ref <= 10][:3]
+
+
 def pick_chart(df: pd.DataFrame) -> None:
     """Draw a simple chart when the result shape suggests one; otherwise show nothing."""
-    if len(df) < 2 or len(df.columns) < 2:
-        return
-    numeric = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-    if not numeric:
+    y = chart_columns(df)
+    if not y:
         return
     first = df.columns[0]
     time_like = any(k in first.lower() for k in ("date", "month", "time", "hour", "year", "day"))
-    y = [c for c in numeric if c != first][:3]
-    if not y:
-        return
     data = df.set_index(first)[y]
     if time_like and len(df) > 3:
         st.line_chart(data)

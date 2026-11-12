@@ -21,3 +21,21 @@ def test_page_renders_and_reports_missing_key(monkeypatch) -> None:
     ask = next(b for b in at.button if b.label == "Ask")
     ask.click().run()
     assert any("GROQ_API_KEY" in e.value for e in at.error)
+
+
+def test_chart_columns_skip_counts_and_mismatched_scales() -> None:
+    import sys
+
+    import pandas as pd
+
+    sys.path.insert(0, str(Path(APP).parent))
+    from streamlit_app import chart_columns
+
+    df = pd.DataFrame(
+        [["Autumn", 6555, 250, 0.0381, 91.86], ["Winter", 6504, 128, 0.0197, 99.31]],
+        columns=["season", "total_hours", "negative_price_hours", "negative_price_share", "avg_price_eur_mwh"],
+    )
+    # Regression (seen in the app): total_hours dominated the chart; the share is on another scale.
+    assert chart_columns(df) == ["negative_price_hours", "avg_price_eur_mwh"]
+    assert chart_columns(df[["season", "avg_price_eur_mwh"]]) == ["avg_price_eur_mwh"]
+    assert chart_columns(df.head(1)) == []

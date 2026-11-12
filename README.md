@@ -148,6 +148,11 @@ Groq-hosted LLM writes SQL against the dbt marts, and the answer comes back with
 Details: [`docs/agent_architecture.md`](docs/agent_architecture.md) · [`docs/security.md`](docs/security.md) ·
 [`docs/metric_catalogue.md`](docs/metric_catalogue.md).
 
+![Streamlit app: negative-price hours by season, with generated SQL](docs/img/agent_streamlit.png)
+
+*A real session: "what is the relation of negative price and season of the year". The answer, table and SQL
+were checked against the warehouse (summer 7.99 % of hours negative vs. winter 1.97 %).*
+
 - **MCP server** with 4 read-only tools (`get_database_schema`, `get_metric_definitions`,
   `execute_readonly_query`, `get_available_date_range`). The agent reaches data only through these tools. Any MCP
   client can use them over stdio.
