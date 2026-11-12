@@ -75,7 +75,7 @@ def show_result(r: AgentResult) -> None:
     if r.rows:
         df = pd.DataFrame(r.rows, columns=r.columns)
         pick_chart(df)
-        st.dataframe(df, use_container_width=True, hide_index=True)
+        st.dataframe(df, width="stretch", hide_index=True)
         if r.truncated:
             st.info(f"Showing the first {r.row_count} rows; the result was truncated.")
         elif r.limit_applied and r.row_count >= config.get_db_config().max_rows:
@@ -111,7 +111,7 @@ st.write(
 with st.sidebar:
     st.header("Example questions")
     for q in EXAMPLES:
-        if st.button(q, use_container_width=True):
+        if st.button(q, width="stretch"):
             st.session_state["question"] = q
     st.divider()
     st.header("Data coverage")
