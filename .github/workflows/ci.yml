@@ -60,7 +60,7 @@ jobs:
         env:
           TEST_PG_ADMIN_URL: postgresql+psycopg2://ci:ci@localhost:5432/postgres
         run: >
-          pytest --cov=src --cov-report=term-missing --cov-report=xml
+          pytest --cov=src --cov=analytics_agent --cov-report=term-missing --cov-report=xml
           --junitxml=junit.xml
       - name: Upload test results
         if: always()

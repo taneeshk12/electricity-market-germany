@@ -48,5 +48,5 @@ def pg_engine() -> Iterator[Engine]:
 def clean_db(pg_engine: Engine) -> Engine:
     """Empty schema before each test so tests are independent."""
     with pg_engine.begin() as conn:
-        conn.execute(text("DROP SCHEMA public CASCADE; CREATE SCHEMA public"))
+        conn.execute(text("DROP SCHEMA IF EXISTS marts CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public"))
     return pg_engine

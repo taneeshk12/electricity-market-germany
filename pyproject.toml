@@ -11,8 +11,12 @@ ignore = [
     "UP017",  # datetime.UTC alias: timezone.utc is equally correct and used throughout
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# Curated descriptions, metric SQL and LLM prompts: long string literals read better unwrapped.
+"analytics_agent/{schema_context,metrics,sql_generator}.py" = ["E501"]
+
 [tool.ruff.lint.isort]
-known-first-party = ["src"]
+known-first-party = ["src", "analytics_agent"]
 
 [tool.ruff.format]
 # The original pipeline modules use hand-aligned formatting; they are linted but not

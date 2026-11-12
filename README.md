@@ -5,7 +5,7 @@ Bundesnetzagentur's SMARD platform into a PostgreSQL star schema, SQL analysis, 
 with automated tests, data-quality gates, CI and a dbt analytics layer.
 
 `Python` · `pandas` · `SQLAlchemy` · `PostgreSQL 16` · `Docker` · `SQL (window functions, CTEs)` · `Power BI / DAX` ·
-`pytest` · `GitHub Actions` · `dbt` · `Ruff`
+`pytest` · `GitHub Actions` · `dbt` · `Ruff` · `Groq LLM` · `MCP` · `SQLGlot` · `Streamlit`
 
 [![CI](https://github.com/taneeshk12/electricity-market-germany/actions/workflows/ci.yml/badge.svg)](https://github.com/taneeshk12/electricity-market-germany/actions/workflows/ci.yml)
 
@@ -141,6 +141,39 @@ From [`docs/data_quality_report.md`](docs/data_quality_report.md):
   These include a test that keeps the dbt mart identical to the `v_hourly` view used by Power BI. dbt writes only
   to its own schemas; `public` stays owned by the Python load.
 
+## Natural-language analytics agent
+
+Ask questions in plain English, for example *"What percentage of hours had negative prices in each year?"*. A
+Groq-hosted LLM writes SQL against the dbt marts, and the answer comes back with the SQL, a table and a chart.
+Details: [`docs/agent_architecture.md`](docs/agent_architecture.md) · [`docs/security.md`](docs/security.md) ·
+[`docs/metric_catalogue.md`](docs/metric_catalogue.md).
+
+- **MCP server** with 4 read-only tools (`get_database_schema`, `get_metric_definitions`,
+  `execute_readonly_query`, `get_available_date_range`). The agent reaches data only through these tools. Any MCP
+  client can use them over stdio.
+- **Semantic layer**: 11 metrics (renewable share, residual load, negative-price hours, volatility, peak/off-peak
+  spread, …), each with definition, formula, unit and limitations. Every example query has been executed against
+  the warehouse.
+- **Security**: SQLGlot validation (one SELECT, approved `marts` tables only, no catalogs, no dangerous
+  functions, enforced LIMIT). The query runs as a dedicated **read-only PostgreSQL role** (SELECT on `marts` only,
+  read-only transactions, 5 s timeout). The database role is the primary boundary; prompts are not a control.
+- **Honest failure modes**: the agent abstains on questions the data can't answer (gas prices, imports), makes one
+  repair attempt on SQL errors, and always shows the SQL it ran.
+- **Tests**: 54 validator tests (10 valid queries, 35 unsafe inputs), agent and MCP tests with a scripted LLM,
+  Groq retry/error tests, a Streamlit smoke test, and database-level tests of the read-only role.
+
+> Status: everything except live Groq calls is implemented and tested. End-to-end answers from Groq and the
+> accuracy evaluation follow once a `GROQ_API_KEY` is configured (Week 3).
+
+```bash
+pip install -r requirements-agent.txt   # or: make install
+make agent-role                          # create the read-only role (set AGENT_DB_PASSWORD in .env first)
+make agent-check                         # verify schema context + role permissions against the live DB
+make app                                 # Streamlit UI on http://localhost:8501 (needs GROQ_API_KEY, GROQ_MODEL)
+python -m analytics_agent.cli "Which month had the most volatile prices?"
+make mcp-server                          # MCP server on stdio
+```
+
 ## How to run
 
 Requirements: Python 3.11+, Docker, `make`.
@@ -188,7 +221,9 @@ make dbt-docs-serve           # dbt docs + lineage on http://localhost:8080
 │   ├── 02_dim_date.sql     calendar + German public holidays
 │   ├── 03_views.sql        hourly analysis view
 │   └── analysis/           11 commented analysis queries
-├── tests/                  unit/ (synthetic fixtures) and integration/ (throwaway PostgreSQL database)
+├── analytics_agent/        NL agent: MCP server + tools, SQL validator, Groq client, semantic layer
+├── app/                    Streamlit UI
+├── tests/                  unit/ (synthetic fixtures, fake LLM) and integration/ (throwaway PostgreSQL database)
 ├── dbt_electricity/        dbt project: sources, staging, intermediate, marts, tests
 ├── scripts/                CI helper: loads synthetic data for the dbt CI job
 ├── .github/workflows/      CI: lint, tests, dbt build
@@ -196,7 +231,7 @@ make dbt-docs-serve           # dbt docs + lineage on http://localhost:8080
 ├── docs/                   architecture, data model, quality reports, analysis results, technical audit
 ├── run_pipeline.py         one command for the whole pipeline
 ├── docker-compose.yml · Makefile · pyproject.toml · .env.example
-├── requirements.txt · requirements-dev.txt · requirements-dbt.txt
+├── requirements.txt · requirements-agent.txt · requirements-dev.txt · requirements-dbt.txt
 ```
 
 ## Limitations
@@ -219,7 +254,7 @@ make dbt-docs-serve           # dbt docs + lineage on http://localhost:8080
 
 - Add gas and CO₂ prices and cross-border flows, and fit a regression for price drivers with controls.
 - Analyse the 15-minute resolution after 2025-10-01 directly (intra-hour price patterns).
-- Natural-language analytics agent on the dbt marts (read-only role, SQL validation, evaluation).
+- Evaluation of the agent: 50-question benchmark against a baseline (Week 3).
 - Orchestration with scheduled incremental loads.
 - Publish the report to the Power BI Service with scheduled refresh.
 
