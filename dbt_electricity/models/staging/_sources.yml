@@ -1,0 +1,96 @@
+version: 2
+
+sources:
+  - name: warehouse
+    description: >
+      Star schema loaded by the Python pipeline (src/load.py) from SMARD.de data
+      (Bundesnetzagentur, CC BY 4.0), market area DE-LU, hourly grain, UTC-keyed.
+      These source tests validate the warehouse itself.
+    schema: public
+    tables:
+      - name: fact_hourly
+        description: Net generation per UTC hour and source. Rows without a value are not loaded.
+        columns:
+          - name: timestamp_key
+            description: yyyymmddhh of the UTC hour start.
+            data_tests:
+              - not_null
+              - relationships: {arguments: {to: "source('warehouse', 'dim_datetime')", field: timestamp_key}}
+          - name: source_key
+            data_tests:
+              - not_null
+              - relationships: {arguments: {to: "source('warehouse', 'dim_source')", field: source_key}}
+          - name: date_key
+            data_tests:
+              - not_null
+              - relationships: {arguments: {to: "source('warehouse', 'dim_date')", field: date_key}}
+          - name: generation_mwh
+            description: Energy generated in the hour (MWh = average MW over the hour).
+            data_tests:
+              - not_null
+              - accepted_range: {arguments: {min_value: 0}}
+        data_tests:
+          - unique_combination: {arguments: {columns: [timestamp_key, source_key]}}
+
+      - name: fact_price_load
+        description: Day-ahead price (DE-LU) and grid load per UTC hour.
+        columns:
+          - name: timestamp_key
+            data_tests:
+              - unique
+              - not_null
+              - relationships: {arguments: {to: "source('warehouse', 'dim_datetime')", field: timestamp_key}}
+          - name: price_eur_mwh
+            description: Hourly day-ahead price; mean of four quarter-hour prices since 2025-10-01.
+            data_tests:
+              - not_null
+              - accepted_range: {arguments: {min_value: -500, max_value: 4000}}  # SDAC harmonised limits
+          - name: consumption_mwh
+            description: Grid load (Netzlast) in the hour.
+            data_tests:
+              - not_null
+              - accepted_range: {arguments: {min_value: 0}}
+
+      - name: dim_datetime
+        description: One row per UTC hour of the analysis period (shared hourly axis).
+        columns:
+          - name: timestamp_key
+            data_tests: [unique, not_null]
+          - name: timestamp_utc
+            data_tests: [unique, not_null]
+          - name: utc_offset_h
+            data_tests:
+              - accepted_values: {arguments: {values: [1, 2]}}
+          - name: date_key
+            data_tests:
+              - not_null
+              - relationships: {arguments: {to: "source('warehouse', 'dim_date')", field: date_key}}
+
+      - name: dim_date
+        description: Local (Europe/Berlin) calendar with German nationwide public holidays.
+        columns:
+          - name: date_key
+            data_tests: [unique, not_null]
+          - name: season
+            data_tests:
+              - accepted_values: {arguments: {values: [Winter, Spring, Summer, Autumn]}}
+
+      - name: dim_hour
+        columns:
+          - name: hour_key
+            data_tests: [unique, not_null]
+
+      - name: v_hourly
+        description: >
+          View from sql/03_views.sql used by Power BI and sql/analysis. Not used as a model input;
+          referenced only by a test that keeps marts.fct_market_hourly identical to it.
+
+      - name: dim_source
+        columns:
+          - name: source_key
+            data_tests: [unique, not_null]
+          - name: source_name
+            data_tests: [unique, not_null]
+          - name: category
+            data_tests:
+              - accepted_values: {arguments: {values: [renewable, fossil, nuclear, other]}}

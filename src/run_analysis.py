@@ -48,7 +48,10 @@ def main() -> None:
             df = pd.read_sql(text(sql), conn)
             df.to_csv(RESULTS_DIR / f"{path.stem}.csv", index=False)
             shown = df if len(df) <= MAX_ROWS_IN_MD else df.head(MAX_ROWS_IN_MD)
-            note = "" if shown is df else f"\n\n*Showing {MAX_ROWS_IN_MD} of {len(df)} rows – full result in `analysis_results/{path.stem}.csv`.*"
+            note = "" if shown is df else (
+                f"\n\n*Showing {MAX_ROWS_IN_MD} of {len(df)} rows – "
+                f"full result in `analysis_results/{path.stem}.csv`.*"
+            )
             sections.append(
                 f"## {path.stem}\n\n{_header_comment(sql)}\n\n"
                 f"Query: [`sql/analysis/{path.name}`](../sql/analysis/{path.name})\n\n"

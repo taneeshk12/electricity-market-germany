@@ -1,0 +1,173 @@
+{
+  "generated_at_utc": "2026-11-12T12:56:37+00:00",
+  "status": "passed_with_warnings",
+  "summary": {
+    "pass": 17,
+    "warn": 1,
+    "fail": 0
+  },
+  "checks": [
+    {
+      "name": "row_count.fact_hourly",
+      "description": "fact_hourly rows = non-null generation rows in the parquet file",
+      "expected": "298792",
+      "actual": "298792",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "row_count.fact_price_load",
+      "description": "fact_price_load rows = rows in the parquet file",
+      "expected": "26304",
+      "actual": "26304",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "row_count.dim_datetime",
+      "description": "dim_datetime has one row per hour of the period",
+      "expected": "26304",
+      "actual": "26304",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "row_count.dim_hour",
+      "description": "dim_hour has 24 rows",
+      "expected": "24",
+      "actual": "24",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "row_count.dim_source",
+      "description": "dim_source covers every pipeline source",
+      "expected": ">= 12",
+      "actual": "12",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "orphans.fact_hourly.timestamp_key",
+      "description": "fact_hourly rows without a dim_datetime row",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "orphans.fact_hourly.source_key",
+      "description": "fact_hourly rows without a dim_source row",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "orphans.fact_hourly.date_key",
+      "description": "fact_hourly rows without a dim_date row",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "orphans.fact_price_load.timestamp_key",
+      "description": "fact_price_load rows without a dim_datetime row",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "orphans.dim_datetime.date_key",
+      "description": "dim_datetime rows without a dim_date row",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "key_consistency.fact_hourly",
+      "description": "fact_hourly date_key/hour_key agree with dim_datetime",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:36+00:00"
+    },
+    {
+      "name": "key_consistency.fact_price_load",
+      "description": "fact_price_load date_key/hour_key agree with dim_datetime",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:37+00:00"
+    },
+    {
+      "name": "hours_without_price_load",
+      "description": "every dim_datetime hour has a fact_price_load row",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:37+00:00"
+    },
+    {
+      "name": "hourly_gaps.dim_datetime",
+      "description": "consecutive dim_datetime hours are exactly 1 hour apart",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:37+00:00"
+    },
+    {
+      "name": "local_dates_missing_in_dim_date",
+      "description": "every local date of the period exists in dim_date",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:37+00:00"
+    },
+    {
+      "name": "null_price_or_load",
+      "description": "no NULL price or grid load in fact_price_load",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:37+00:00"
+    },
+    {
+      "name": "range.generation_non_negative",
+      "description": "generation_mwh >= 0",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:37+00:00"
+    },
+    {
+      "name": "completeness.sources_per_hour",
+      "description": "hours where a non-nuclear source has no value",
+      "expected": "0",
+      "actual": "15",
+      "status": "warn",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:37+00:00"
+    }
+  ]
+}

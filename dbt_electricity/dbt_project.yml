@@ -1,0 +1,29 @@
+name: electricity
+version: "1.0.0"
+config-version: 2
+profile: electricity
+
+model-paths: ["models"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# The Python pipeline owns schema `public` (star schema + v_hourly, used by Power BI).
+# dbt only reads from it and writes to its own schemas, so it can never break the load.
+models:
+  electricity:
+    staging:
+      +schema: staging
+      +materialized: view
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+
+flags:
+  send_anonymous_usage_stats: false

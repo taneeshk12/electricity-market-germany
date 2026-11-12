@@ -1,0 +1,5 @@
+# dbt lives in its own virtualenv (.venv-dbt) so its large dependency tree cannot
+# conflict with the pipeline. Verified: dbt-core 1.11.17 + dbt-postgres 1.10.2, Python 3.11.
+# (dbt-core 1.12 additionally downloads a binary parser at install time.)
+dbt-core~=1.11.0
+dbt-postgres~=1.10.0

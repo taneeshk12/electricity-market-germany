@@ -22,7 +22,6 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import asdict, dataclass
-from pathlib import Path
 
 import pandas as pd
 
@@ -162,6 +161,9 @@ def main() -> None:
         logger.info("%-20s step=%smin quarters=%d null=%d incomplete_h=%d missing_h=%d",
                     s.name, stats.step_minutes, stats.raw_points, stats.null_quarters,
                     stats.incomplete_hours, stats.missing_hours)
+
+    logger.info("Extracted %d raw quarter-hour points across %d series",
+                sum(st.raw_points for st in all_stats), len(all_stats))
 
     # Generation -> long format (timestamp, source, mwh). NaN rows are kept on purpose
     # so missing data stays visible; the load step decides how to treat them.

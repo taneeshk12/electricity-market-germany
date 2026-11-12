@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -84,7 +84,7 @@ class DbSettings:
     """Connection settings for the PostgreSQL instance from docker-compose."""
 
     user: str
-    password: str
+    password: str = field(repr=False)  # never show up in logs or tracebacks
     host: str
     port: int
     database: str
@@ -115,9 +115,20 @@ def get_db_settings() -> DbSettings:
 
 
 def setup_logging() -> None:
-    """Configure root logging once for all pipeline scripts."""
+    """Configure root logging once for all pipeline scripts.
+
+    Logs go to stderr; set LOG_FILE (e.g. logs/pipeline.log) to also append to a file.
+    Credentials are never logged: DbSettings hides the password from its repr.
+    """
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    log_file = os.getenv("LOG_FILE")
+    if log_file:
+        path = Path(log_file) if Path(log_file).is_absolute() else PROJECT_ROOT / log_file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(path, encoding="utf-8"))
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO"),
         format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
-        datefmt="%H:%M:%S",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=handlers,
     )

@@ -1,6 +1,6 @@
 # Data quality report
 
-Generated: 2026-10-21 14:03 UTC · Source: SMARD.de – Bundesnetzagentur | Strommarktdaten (chart-data API) · region DE-LU · retrieved 2026-10-20T21:33:07+00:00 · period 2023-01-01 – 2025-12-31
+Generated: 2026-11-12 12:56 UTC · Source: SMARD.de – Bundesnetzagentur | Strommarktdaten (chart-data API) · region DE-LU · retrieved 2026-10-20T21:33:07+00:00 · period 2023-01-01 – 2025-12-31
 
 **Status: ⚠️ PASSED with warnings**
 
@@ -10,6 +10,40 @@ Generated: 2026-10-21 14:03 UTC · Source: SMARD.de – Bundesnetzagentur | Stro
 - Warning: other_conventional: 9 missing hours
 - Warning: solar: 1 missing hours
 - Warning: wind_onshore: 1 missing hours
+
+## Check summary
+
+Machine-readable version: [`data_quality_report.json`](data_quality_report.json).
+
+| check | description | expected | actual | severity | status |
+|---|---|---|---|---|---|
+| price_load_row_count | price/load has exactly one row per hour of the period | 26304 | 26304 | critical | ✅ pass |
+| generation_row_count | generation has one row per hour and source (long format) | 315648 | 315648 | critical | ✅ pass |
+| null_keys | no NULLs in timestamp or source key columns | 0 | 0 | critical | ✅ pass |
+| hourly_continuity | consecutive UTC timestamps are exactly 1 hour apart | 0 gaps | 0 gaps | critical | ✅ pass |
+| monotonic_timestamps | UTC timestamps strictly increasing (no duplicates / disorder) | 0 | 0 | critical | ✅ pass |
+| expected_frequency | every timestamp lies on a full UTC hour (hourly frequency) | 0 | 0 | critical | ✅ pass |
+| dst_days | only DST switch days (last Sunday Mar = 23h, Oct = 25h) deviate from 24h | all irregular days are DST days | 6 irregular days, all DST: True | critical | ✅ pass |
+| missing_hours.biomass | hours without a value for biomass | 0 | 1 | warning | ⚠️ warn |
+| missing_hours.hard_coal | hours without a value for hard_coal | 0 | 0 | warning | ✅ pass |
+| missing_hours.hydro | hours without a value for hydro | 0 | 7 | warning | ⚠️ warn |
+| missing_hours.lignite | hours without a value for lignite | 0 | 0 | warning | ✅ pass |
+| missing_hours.natural_gas | hours without a value for natural_gas | 0 | 1 | warning | ⚠️ warn |
+| missing_hours.other_conventional | hours without a value for other_conventional | 0 | 9 | warning | ⚠️ warn |
+| missing_hours.other_renewable | hours without a value for other_renewable | 0 | 0 | warning | ✅ pass |
+| missing_hours.pumped_storage | hours without a value for pumped_storage | 0 | 0 | warning | ✅ pass |
+| missing_hours.solar | hours without a value for solar | 0 | 1 | warning | ⚠️ warn |
+| missing_hours.wind_offshore | hours without a value for wind_offshore | 0 | 0 | warning | ✅ pass |
+| missing_hours.wind_onshore | hours without a value for wind_onshore | 0 | 1 | warning | ⚠️ warn |
+| missing_hours.price_eur_mwh | hours without a value for price_eur_mwh | 0 | 0 | critical | ✅ pass |
+| missing_hours.consumption_mwh | hours without a value for consumption_mwh | 0 | 0 | critical | ✅ pass |
+| duplicate_keys | no duplicate (timestamp_utc, source) / timestamp_utc keys after transform | 0 | 0 | critical | ✅ pass |
+| conflicting_raw_duplicates | raw chunks contain no timestamps with differing values | 0 | 0 | critical | ✅ pass |
+| negative_generation | generation_mwh >= 0 | 0 | 0 | warning | ✅ pass |
+| load_range | hourly grid load within [15,000, 120,000] MWh | 0 | 0 | warning | ✅ pass |
+| price_limits | day-ahead price within harmonised limits [-500, 4000] | 0 | 0 | critical | ✅ pass |
+| smard_reconciliation | our hourly aggregation equals SMARD's hourly series within tolerance | 0 | 0 mismatching hours | critical | ✅ pass |
+| raw_resolution | raw series are delivered in 15-minute steps | [15.0] | [15.0] | warning | ✅ pass |
 
 ## 0. Source format and time handling
 
@@ -24,6 +58,20 @@ Data comes from SMARD's chart-data JSON API, not the CSV download portal. Values
 | 2025 | 8,760 | 8,760 | 105,120 | 105,120 |
 
 12 generation sources in long format.
+
+## 1a. Null keys
+
+- generation.timestamp_utc: **0**
+- generation.timestamp_local: **0**
+- generation.source: **0**
+- price_load.timestamp_utc: **0**
+- price_load.timestamp_local: **0**
+
+## 1b. Timestamp continuity and frequency
+
+- gaps > 1 h: **0**
+- non-increasing steps: **0**
+- timestamps not on a full hour: **0**
 
 ## 2. Daylight saving time
 
@@ -88,6 +136,10 @@ Raw quarter-hour chunks (non-numeric values like '-' are coerced to NaN and coun
 ## 5. Negative generation
 
 No negative generation values.
+
+## 5a. Grid load range
+
+Observed min / max hourly load: **31,278 / 76,400 MWh**. Hours outside [15,000, 120,000]: **0**.
 
 ## 6. Price plausibility and outliers
 

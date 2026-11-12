@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: int_generation_by_category_hourly
+    description: >
+      Generation per UTC hour aggregated by category. Hours where a single source is missing
+      (15 hours in 2023–2025, see docs/data_quality_report.md) have a slightly understated total.
+    columns:
+      - name: timestamp_key
+        data_tests: [unique, not_null]
+      - name: sources_reporting
+        description: Number of sources with a value in this hour (nuclear stops after 2023-04-15).

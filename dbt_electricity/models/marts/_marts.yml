@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: fct_market_hourly
+    description: >
+      One row per UTC hour (DE-LU): day-ahead price, grid load, generation by category,
+      renewable share, residual load and denormalised local calendar attributes.
+      Measures are identical to public.v_hourly (tested by assert_fct_market_hourly_matches_v_hourly).
+    columns:
+      - name: timestamp_key
+        description: yyyymmddhh of the UTC hour start (primary key).
+        data_tests: [unique, not_null]
+      - name: timestamp_utc
+        data_tests: [unique, not_null]
+      - name: local_date
+        data_tests: [not_null]
+      - name: hour_of_day
+        description: Local hour 0–23. Appears twice on the autumn DST day, is missing once in spring.
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0, max_value: 23}}
+      - name: is_peak
+        description: Mon–Fri 08:00–20:00 local (EEX definition); public holidays are not excluded.
+      - name: price_eur_mwh
+        description: Day-ahead price in EUR/MWh.
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: -500, max_value: 4000}}
+      - name: is_negative_price
+        description: price_eur_mwh < 0.
+      - name: consumption_mwh
+        description: Grid load in MWh (= average MW over the hour).
+        data_tests: [not_null]
+      - name: renewable_share
+        description: renewable_mwh / total_gen_mwh for this hour (share of net generation, SMARD convention).
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 1}}
+      - name: residual_load_mwh
+        description: consumption_mwh minus wind and solar generation.
+
+  - name: fct_generation_hourly
+    description: Net generation per UTC hour and source with labels and category.
+    data_tests:
+      - unique_combination: {arguments: {columns: [timestamp_key, source_name]}}
+    columns:
+      - name: generation_mwh
+        data_tests:
+          - not_null
+          - accepted_range: {arguments: {min_value: 0}}
+      - name: category
+        data_tests:
+          - accepted_values: {arguments: {values: [renewable, fossil, nuclear, other]}}
+
+  - name: mart_market_daily
+    description: Daily (local date) price, load and generation metrics.
+    columns:
+      - name: local_date
+        data_tests: [unique, not_null]
+      - name: hours
+        description: Hours in the local day; 23 or 25 on DST switch days.
+        data_tests:
+          - accepted_values: {arguments: {values: [23, 24, 25]}}
+      - name: renewable_share
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 1}}
+
+  - name: mart_market_monthly
+    description: Monthly price level, volatility, negative-price hours, demand and generation mix.
+    columns:
+      - name: year_month
+        data_tests: [unique, not_null]
+      - name: price_stddev_eur_mwh
+        description: Sample standard deviation of hourly prices in the month (price volatility).
+      - name: negative_price_hour_share
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 1}}
+      - name: renewable_share
+        description: Energy-weighted renewable share of net generation in the month.
+        data_tests:
+          - accepted_range: {arguments: {min_value: 0, max_value: 1}}

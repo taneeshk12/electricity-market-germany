@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_warehouse__generation
+    description: Hourly net generation per source, one row per (timestamp_key, source_key).
+    data_tests:
+      - unique_combination: {arguments: {columns: [timestamp_key, source_key]}}
+  - name: stg_warehouse__price_load
+    description: Hourly day-ahead price (EUR/MWh) and grid load (MWh).
+    columns:
+      - name: timestamp_key
+        data_tests: [unique, not_null]
+  - name: stg_warehouse__datetime
+    description: Hourly time axis keyed on the UTC hour.
+    columns:
+      - name: timestamp_key
+        data_tests: [unique, not_null]
+  - name: stg_warehouse__calendar
+    description: Local calendar (Europe/Berlin), nationwide German public holidays only.
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+  - name: stg_warehouse__hours
+    description: Hour-of-day attributes (local hour 0–23).
+    columns:
+      - name: hour_key
+        data_tests: [unique, not_null]
+  - name: stg_warehouse__sources
+    description: Generation sources and their category (renewable / fossil / nuclear / other).
+    columns:
+      - name: source_key
+        data_tests: [unique, not_null]

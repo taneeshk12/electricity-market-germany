@@ -1,0 +1,263 @@
+{
+  "generated_at_utc": "2026-11-12T12:56:29+00:00",
+  "status": "passed_with_warnings",
+  "source": {
+    "source": "SMARD.de \u2013 Bundesnetzagentur | Strommarktdaten (chart-data API)",
+    "region": "DE-LU",
+    "retrieved_at_utc": "2026-10-20T21:33:07+00:00",
+    "period": [
+      "2023-01-01",
+      "2025-12-31"
+    ]
+  },
+  "summary": {
+    "pass": 21,
+    "warn": 6,
+    "fail": 0
+  },
+  "checks": [
+    {
+      "name": "price_load_row_count",
+      "description": "price/load has exactly one row per hour of the period",
+      "expected": "26304",
+      "actual": "26304",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "generation_row_count",
+      "description": "generation has one row per hour and source (long format)",
+      "expected": "315648",
+      "actual": "315648",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "null_keys",
+      "description": "no NULLs in timestamp or source key columns",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "hourly_continuity",
+      "description": "consecutive UTC timestamps are exactly 1 hour apart",
+      "expected": "0 gaps",
+      "actual": "0 gaps",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "monotonic_timestamps",
+      "description": "UTC timestamps strictly increasing (no duplicates / disorder)",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "expected_frequency",
+      "description": "every timestamp lies on a full UTC hour (hourly frequency)",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "dst_days",
+      "description": "only DST switch days (last Sunday Mar = 23h, Oct = 25h) deviate from 24h",
+      "expected": "all irregular days are DST days",
+      "actual": "6 irregular days, all DST: True",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.biomass",
+      "description": "hours without a value for biomass",
+      "expected": "0",
+      "actual": "1",
+      "status": "warn",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.hard_coal",
+      "description": "hours without a value for hard_coal",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.hydro",
+      "description": "hours without a value for hydro",
+      "expected": "0",
+      "actual": "7",
+      "status": "warn",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.lignite",
+      "description": "hours without a value for lignite",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.natural_gas",
+      "description": "hours without a value for natural_gas",
+      "expected": "0",
+      "actual": "1",
+      "status": "warn",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.other_conventional",
+      "description": "hours without a value for other_conventional",
+      "expected": "0",
+      "actual": "9",
+      "status": "warn",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.other_renewable",
+      "description": "hours without a value for other_renewable",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.pumped_storage",
+      "description": "hours without a value for pumped_storage",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.solar",
+      "description": "hours without a value for solar",
+      "expected": "0",
+      "actual": "1",
+      "status": "warn",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.wind_offshore",
+      "description": "hours without a value for wind_offshore",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.wind_onshore",
+      "description": "hours without a value for wind_onshore",
+      "expected": "0",
+      "actual": "1",
+      "status": "warn",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.price_eur_mwh",
+      "description": "hours without a value for price_eur_mwh",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "missing_hours.consumption_mwh",
+      "description": "hours without a value for consumption_mwh",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "duplicate_keys",
+      "description": "no duplicate (timestamp_utc, source) / timestamp_utc keys after transform",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "conflicting_raw_duplicates",
+      "description": "raw chunks contain no timestamps with differing values",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "negative_generation",
+      "description": "generation_mwh >= 0",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "load_range",
+      "description": "hourly grid load within [15,000, 120,000] MWh",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "price_limits",
+      "description": "day-ahead price within harmonised limits [-500, 4000]",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "smard_reconciliation",
+      "description": "our hourly aggregation equals SMARD's hourly series within tolerance",
+      "expected": "0",
+      "actual": "0 mismatching hours",
+      "status": "pass",
+      "severity": "critical",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    },
+    {
+      "name": "raw_resolution",
+      "description": "raw series are delivered in 15-minute steps",
+      "expected": "[15.0]",
+      "actual": "[15.0]",
+      "status": "pass",
+      "severity": "warning",
+      "checked_at_utc": "2026-11-12T12:56:29+00:00"
+    }
+  ]
+}

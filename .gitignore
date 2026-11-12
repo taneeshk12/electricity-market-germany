@@ -11,7 +11,11 @@ data/processed/*
 __pycache__/
 *.py[cod]
 .venv/
+.venv-dbt/
 venv/
+.coverage
+coverage.xml
+junit*.xml
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -32,3 +36,10 @@ venv/
 # Logs
 *.log
 logs/
+
+# dbt (profiles.yml is created from profiles.example.yml; credentials come from env vars)
+dbt_electricity/target/
+dbt_electricity/dbt_packages/
+dbt_electricity/logs/
+dbt_electricity/profiles.yml
+dbt_electricity/.user.yml

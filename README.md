@@ -1,9 +1,13 @@
 # What drives electricity prices in Germany?
 
 **Renewables, demand and negative prices, 2023–2025.** An end-to-end data project: Python ETL from the
-Bundesnetzagentur's SMARD platform into a PostgreSQL star schema, SQL analysis, and a Power BI report.
+Bundesnetzagentur's SMARD platform into a PostgreSQL star schema, SQL analysis, and a Power BI report,
+with automated tests, data-quality gates, CI and a dbt analytics layer.
 
-`Python` · `pandas` · `SQLAlchemy` · `PostgreSQL 16` · `Docker` · `SQL (window functions, CTEs)` · `Power BI / DAX`
+`Python` · `pandas` · `SQLAlchemy` · `PostgreSQL 16` · `Docker` · `SQL (window functions, CTEs)` · `Power BI / DAX` ·
+`pytest` · `GitHub Actions` · `dbt` · `Ruff`
+
+[![CI](https://github.com/taneeshk12/electricity-market-germany/actions/workflows/ci.yml/badge.svg)](https://github.com/taneeshk12/electricity-market-germany/actions/workflows/ci.yml)
 
 ---
 
@@ -54,7 +58,8 @@ and 4.71 € (2025)**, because many "peak" hours now fall into the solar midday 
 
 Three pages on top of the PostgreSQL star schema (import mode, 30 DAX measures, 7 relationships).
 The full report is in [`docs/electricity_market_report.pdf`](docs/electricity_market_report.pdf), and the
-Power BI project (`.pbip`, text-based, so it can be diffed) is in [`powerbi/`](powerbi/).
+DAX measures, report spec and setup guide are in [`powerbi/`](powerbi/). The binary `.pbix` file is not committed (it is
+gitignored for size); the report can be rebuilt from the spec and measures.
 
 **Overview:** renewable share, generation mix and price trend, with year-over-year KPIs.
 
@@ -75,9 +80,11 @@ flowchart LR
     S[("SMARD.de<br/>JSON API")] --> E["extract.py"] --> R[/"data/raw"/]
     R --> T["transform.py<br/>DST · 15 min → 1 h"] --> P[/"data/processed"/]
     P --> Q["quality_checks.py"] --> L["load.py<br/>idempotent upsert"] --> DB[("PostgreSQL 16<br/>star schema")]
-    Q --> QR["data_quality_report.md"]
+    Q --> QR["data_quality_report<br/>.md + .json"]
+    DB --> V["warehouse_checks.py<br/>post-load verify"] --> VR["warehouse_quality_report<br/>.md + .json"]
     DB --> A["sql/analysis<br/>11 queries"] --> AR["analysis_results.md"]
     DB --> PBI["Power BI<br/>3-page report"]
+    DB --> DBT["dbt<br/>staging → marts"] --> DB
 ```
 
 Details and design decisions: [`docs/architecture.md`](docs/architecture.md).
@@ -111,6 +118,28 @@ From [`docs/data_quality_report.md`](docs/data_quality_report.md):
 - **Resolution change detected:** day-ahead prices became genuinely 15-minute on **2025-10-01**; before that,
   SMARD repeats the hourly price in each quarter-hour.
 - **No made-up data:** 20 incomplete source-hours stay NULL, and nuclear (shut down 2023-04-15) is not filled with zeros.
+- **Machine-readable results:** every check is a record with expected value, actual value, status and timestamp
+  ([`data_quality_report.json`](docs/data_quality_report.json)). Current status: 21 pass, 6 warnings (the missing
+  source-hours above), 0 failures.
+- **Post-load verification:** the `verify` step reconciles row counts between the processed files and the
+  warehouse and checks orphans, key consistency, hourly gaps and calendar coverage
+  ([`warehouse_quality_report.md`](docs/warehouse_quality_report.md)): 17 pass, 1 warning, 0 failures.
+
+## Testing, CI and dbt
+
+- **58 pytest tests** ([`tests/`](tests/)): 44 unit tests on small synthetic fixtures (extract with a fake HTTP
+  session, transform, quality checks, load builders) and 14 integration tests against real PostgreSQL. Covered
+  behaviour includes DST days (23/25 h, the repeated 02:00 hour), complete-hour-only aggregation, duplicate and
+  missing-hour detection, idempotent re-load (rows are verified unchanged via `xmin`), update and delete of changed
+  rows, rollback of a failed load, and PK/FK/CHECK constraints. Integration tests create and drop their own
+  `emg_test_*` database and never touch the pipeline database. Coverage of `src/` is 85 %.
+- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push and PR: Ruff lint and format
+  check, all tests with a PostgreSQL 16 service, and `dbt build` against synthetic data loaded through the real
+  load step. No credentials are needed.
+- **dbt** ([`dbt_electricity/`](dbt_electricity/)): staging → intermediate → marts on top of the star schema
+  (`fct_market_hourly`, `fct_generation_hourly`, `mart_market_daily`, `mart_market_monthly`), with 74 data tests.
+  These include a test that keeps the dbt mart identical to the `v_hourly` view used by Power BI. dbt writes only
+  to its own schemas; `public` stays owned by the Python load.
 
 ## How to run
 
@@ -120,13 +149,23 @@ Requirements: Python 3.11+, Docker, `make`.
 git clone https://github.com/taneeshk12/electricity-market-germany.git
 cd electricity-market-germany
 cp .env.example .env          # then set your own password
-make venv                     # create .venv and install requirements
+make install                  # create .venv, install requirements + dev tools (pytest, ruff)
 make db-up                    # start PostgreSQL 16 on localhost:5433
-make pipeline                 # extract → transform → quality → load → analysis
+make pipeline                 # extract → transform → quality → load → verify → analysis
 ```
 
 The first run downloads about 55 MB from SMARD (a few minutes); re-runs take about 15 seconds, and every step is
-idempotent. Run single steps with `make extract|transform|quality|load|analysis`; `make help` lists all targets.
+idempotent. Run single steps with `make extract|transform|quality|load|verify|analysis`; `make help` lists all
+targets. The pipeline exits non-zero if a step or a critical check fails. Set `LOG_FILE=logs/pipeline.log` to also
+write logs to a file.
+
+```bash
+make lint                     # ruff lint + format check
+make test-unit                # unit tests, no database needed
+make test                     # all tests + coverage (needs make db-up; uses a throwaway database)
+make dbt-venv && make dbt-build   # dbt in its own venv: build marts and run 74 data tests
+make dbt-docs-serve           # dbt docs + lineage on http://localhost:8080
+```
 
 **Power BI:** [`powerbi/setup_guide.md`](powerbi/setup_guide.md) (connection and model setup),
 [`powerbi/measures.dax`](powerbi/measures.dax) (all measures, commented),
@@ -139,8 +178,9 @@ idempotent. Run single steps with `make extract|transform|quality|load|analysis`
 │   ├── config.py           paths, period, SMARD series, DB settings
 │   ├── extract.py          download from SMARD (cached, retried)
 │   ├── transform.py        cleaning, DST handling, hourly aggregation
-│   ├── quality_checks.py   checks → docs/data_quality_report.md
+│   ├── quality_checks.py   pre-load checks → docs/data_quality_report.md/.json
 │   ├── load.py             transactional, idempotent load
+│   ├── warehouse_checks.py post-load checks → docs/warehouse_quality_report.md/.json
 │   ├── run_analysis.py     runs sql/analysis → docs/analysis_results.md
 │   └── reporting.py        markdown helper
 ├── sql/
@@ -148,10 +188,15 @@ idempotent. Run single steps with `make extract|transform|quality|load|analysis`
 │   ├── 02_dim_date.sql     calendar + German public holidays
 │   ├── 03_views.sql        hourly analysis view
 │   └── analysis/           11 commented analysis queries
-├── powerbi/                Power BI project (.pbip), DAX measures, report spec, setup guide
-├── docs/                   architecture, data model, quality report, analysis results
+├── tests/                  unit/ (synthetic fixtures) and integration/ (throwaway PostgreSQL database)
+├── dbt_electricity/        dbt project: sources, staging, intermediate, marts, tests
+├── scripts/                CI helper: loads synthetic data for the dbt CI job
+├── .github/workflows/      CI: lint, tests, dbt build
+├── powerbi/                DAX measures, report spec, setup guide (the .pbix is not committed)
+├── docs/                   architecture, data model, quality reports, analysis results, technical audit
 ├── run_pipeline.py         one command for the whole pipeline
-├── docker-compose.yml · Makefile · requirements.txt · .env.example
+├── docker-compose.yml · Makefile · pyproject.toml · .env.example
+├── requirements.txt · requirements-dev.txt · requirements-dbt.txt
 ```
 
 ## Limitations
@@ -174,8 +219,8 @@ idempotent. Run single steps with `make extract|transform|quality|load|analysis`
 
 - Add gas and CO₂ prices and cross-border flows, and fit a regression for price drivers with controls.
 - Analyse the 15-minute resolution after 2025-10-01 directly (intra-hour price patterns).
-- Tests (`pytest` for transform logic) and CI with GitHub Actions.
-- Orchestration (Airflow or Prefect) with daily incremental loads; dbt for the SQL layer.
+- Natural-language analytics agent on the dbt marts (read-only role, SQL validation, evaluation).
+- Orchestration with scheduled incremental loads.
 - Publish the report to the Power BI Service with scheduled refresh.
 
 ## Data source and license

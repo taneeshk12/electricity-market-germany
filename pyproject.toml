@@ -1,0 +1,28 @@
+# Tool configuration only – the project is not packaged; dependencies live in requirements*.txt.
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+extend-exclude = [".venv-dbt", "dbt_electricity"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = [
+    "UP017",  # datetime.UTC alias: timezone.utc is equally correct and used throughout
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.format]
+# The original pipeline modules use hand-aligned formatting; they are linted but not
+# auto-formatted to avoid a large cosmetic diff. New code (tests, future packages) is formatted.
+exclude = ["src/*", "run_pipeline.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: needs a PostgreSQL server (set TEST_PG_ADMIN_URL); creates and drops a throwaway database",
+]
+filterwarnings = ["error::FutureWarning"]
