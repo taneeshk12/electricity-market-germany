@@ -162,9 +162,27 @@ Details: [`docs/agent_architecture.md`](docs/agent_architecture.md) · [`docs/se
 - **Tests**: 54 validator tests (10 valid queries, 35 unsafe inputs), agent and MCP tests with a scripted LLM,
   Groq retry/error tests, a Streamlit smoke test, and database-level tests of the read-only role.
 
-> Status: verified live with Groq `openai/gpt-oss-120b` on 9 smoke-test questions (7 answered correctly,
-> 2 correctly refused: a gas-price question and a "delete all rows" prompt injection). This is a smoke test, not a
-> benchmark; the systematic evaluation is Week 3. On Groq's free tier, rate limits (HTTP 429) add 5–25 s to some answers.
+### Evaluation (50-question benchmark, `openai/gpt-oss-120b` on Groq)
+
+Baseline = the same model with only table and column names, no validator. Improved = this agent. Each expected
+answer was produced by running hand-written SQL against the warehouse. Full report:
+[`docs/evaluation_report.md`](docs/evaluation_report.md).
+
+| | Baseline | Improved |
+|---|---|---|
+| Result accuracy, 40 answerable questions (strict / lenient) | 65 % / 75 % | **95 % / 98 %** |
+| Correct refusals, 10 unanswerable or unsafe questions | 60 % | **90 %** |
+| False refusals of answerable questions | 0 | 0 |
+| Unsafe statements executed | 0 (3 blocked only by the DB role) | 0 |
+| Tokens per question | 834 | 3,140 |
+| Median LLM call latency | 0.7 s | 0.8 s |
+
+Main failure modes, with root causes in the report: the baseline guesses categorical values (`'Offshore Wind'`
+instead of `'wind_offshore'`) and silently returns NULL; both systems sometimes average pre-aggregated means; the
+improved agent answered one "set prices to zero" request with a harmless what-if query instead of refusing.
+Single run with one model and a self-written dataset: read it as evidence, not as a general benchmark. In the
+execution-level safety test, the read-only role alone let 3 of 20 attack queries through (catalog reads, a session
+setting; no writes). The validator blocked all 20.
 
 ```bash
 pip install -r requirements-agent.txt   # or: make install
@@ -224,6 +242,7 @@ make dbt-docs-serve           # dbt docs + lineage on http://localhost:8080
 │   └── analysis/           11 commented analysis queries
 ├── analytics_agent/        NL agent: MCP server + tools, SQL validator, Groq client, semantic layer
 ├── app/                    Streamlit UI
+├── evaluation/             50-question benchmark: dataset, baseline, scorer, safety tests, report
 ├── tests/                  unit/ (synthetic fixtures, fake LLM) and integration/ (throwaway PostgreSQL database)
 ├── dbt_electricity/        dbt project: sources, staging, intermediate, marts, tests
 ├── scripts/                CI helper: loads synthetic data for the dbt CI job
@@ -255,7 +274,7 @@ make dbt-docs-serve           # dbt docs + lineage on http://localhost:8080
 
 - Add gas and CO₂ prices and cross-border flows, and fit a regression for price drivers with controls.
 - Analyse the 15-minute resolution after 2025-10-01 directly (intra-hour price patterns).
-- Evaluation of the agent: 50-question benchmark against a baseline (Week 3).
+- Agent: refuse write requests explicitly, flag empty results for repair, multi-run and multi-model evaluation.
 - Orchestration with scheduled incremental loads.
 - Publish the report to the Power BI Service with scheduled refresh.
 

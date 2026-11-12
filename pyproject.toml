@@ -14,6 +14,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 # Curated descriptions, metric SQL and LLM prompts: long string literals read better unwrapped.
 "analytics_agent/{schema_context,metrics,sql_generator}.py" = ["E501"]
+"evaluation/{build_dataset,safety_tests,report}.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "analytics_agent"]

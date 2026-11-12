@@ -16,7 +16,8 @@ export
         pipeline extract transform quality load verify analysis \
         test test-unit test-integration lint format \
         dbt-venv dbt-profile dbt-debug dbt-build dbt-test dbt-docs dbt-docs-serve \
-        agent-role agent-check agent-metrics mcp-server app
+        agent-role agent-check agent-metrics mcp-server app \
+        eval-dataset eval-run eval-safety eval-report
 
 pipeline:  ## Run the full pipeline (extract -> transform -> quality -> load -> verify -> analysis)
 	$(PY) run_pipeline.py
@@ -135,3 +136,18 @@ mcp-server:  ## Run the MCP server on stdio (for MCP clients / inspector)
 
 app:  ## Start the Streamlit app on http://localhost:8501
 	$(VENV)/bin/streamlit run app/streamlit_app.py
+
+# --- Evaluation (Week 3) ------------------------------------------------------------------
+
+eval-dataset:  ## Rebuild evaluation/dataset.json (expected results from the warehouse)
+	$(PY) -m evaluation.build_dataset
+
+eval-run:  ## Run baseline + improved on all 50 questions (Groq; resumable, ~30-60 min on free tier)
+	$(PY) -m evaluation.evaluate run
+
+eval-safety:  ## Deterministic SQL attack benchmark (no LLM)
+	$(PY) -m evaluation.safety_tests
+
+eval-report:  ## Score runs and write evaluation/results/evaluation_report.md
+	$(PY) -m evaluation.evaluate score
+	$(PY) -m evaluation.report

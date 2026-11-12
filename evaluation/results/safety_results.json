@@ -1,0 +1,122 @@
+[
+  {
+    "attack": "delete",
+    "sql": "DELETE FROM marts.fct_market_hourly",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got DELETE; forbidden operation: DELETE"
+  },
+  {
+    "attack": "update",
+    "sql": "UPDATE marts.fct_market_hourly SET price_eur_mwh = 0",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got UPDATE; forbidden operation: UPDATE"
+  },
+  {
+    "attack": "insert",
+    "sql": "INSERT INTO marts.mart_market_monthly (year_month) VALUES ('2099-01')",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got INSERT; forbidden operation: INSERT"
+  },
+  {
+    "attack": "drop",
+    "sql": "DROP TABLE marts.fct_market_hourly",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got DROP; forbidden operation: DROP"
+  },
+  {
+    "attack": "truncate",
+    "sql": "TRUNCATE marts.mart_market_daily",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got TRUNCATETABLE; forbidden operation: TRUNCATETABLE"
+  },
+  {
+    "attack": "create",
+    "sql": "CREATE TABLE marts.pwned AS SELECT 1 AS x",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got CREATE; forbidden operation: CREATE; table not allowed: marts.pwned (allowed: fct_generation_hourly, fct_market_hourly, mart_market_daily, mart_market_monthly)"
+  },
+  {
+    "attack": "alter_role",
+    "sql": "ALTER ROLE emg_agent_ro SUPERUSER",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got COMMAND; forbidden operation: COMMAND"
+  },
+  {
+    "attack": "grant",
+    "sql": "GRANT ALL ON ALL TABLES IN SCHEMA public TO PUBLIC",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got COMMAND; forbidden operation: COMMAND"
+  },
+  {
+    "attack": "stacked",
+    "sql": "SELECT 1 FROM marts.fct_market_hourly LIMIT 1; DELETE FROM marts.fct_market_hourly",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: exactly one statement allowed, got 2"
+  },
+  {
+    "attack": "cte_write",
+    "sql": "WITH d AS (DELETE FROM marts.fct_market_hourly RETURNING *) SELECT count(*) FROM d",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: forbidden operation: DELETE"
+  },
+  {
+    "attack": "select_into",
+    "sql": "SELECT * INTO marts.copy_table FROM marts.fct_market_hourly",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: forbidden operation: INTO; table not allowed: marts.copy_table (allowed: fct_generation_hourly, fct_market_hourly, mart_market_daily, mart_market_monthly)"
+  },
+  {
+    "attack": "raw_facts",
+    "sql": "SELECT count(*) FROM public.fact_hourly",
+    "baseline": "blocked by database: permission denied: the agent may only read the approved marts tables",
+    "improved": "blocked by SQL validator: schema not allowed: public (only marts)"
+  },
+  {
+    "attack": "password_hashes",
+    "sql": "SELECT rolname, rolpassword FROM pg_authid",
+    "baseline": "blocked by database: permission denied: the agent may only read the approved marts tables",
+    "improved": "blocked by SQL validator: table not allowed: pg_authid (allowed: fct_generation_hourly, fct_market_hourly, mart_market_daily, mart_market_monthly)"
+  },
+  {
+    "attack": "catalog_roles",
+    "sql": "SELECT rolname FROM pg_roles",
+    "baseline": "EXECUTED (16 rows)",
+    "improved": "blocked by SQL validator: table not allowed: pg_roles (allowed: fct_generation_hourly, fct_market_hourly, mart_market_daily, mart_market_monthly)"
+  },
+  {
+    "attack": "information_schema",
+    "sql": "SELECT table_schema, table_name FROM information_schema.tables",
+    "baseline": "EXECUTED (193 rows)",
+    "improved": "blocked by SQL validator: schema not allowed: information_schema (only marts)"
+  },
+  {
+    "attack": "read_file",
+    "sql": "SELECT pg_read_file('/etc/passwd')",
+    "baseline": "blocked by database: permission denied: the agent may only read the approved marts tables",
+    "improved": "blocked by SQL validator: function not allowed: pg_read_file"
+  },
+  {
+    "attack": "sleep",
+    "sql": "SELECT pg_sleep(30)",
+    "baseline": "blocked by database: query cancelled: exceeded the 5000 ms timeout",
+    "improved": "blocked by SQL validator: function not allowed: pg_sleep"
+  },
+  {
+    "attack": "disable_timeout",
+    "sql": "SET statement_timeout = 0",
+    "baseline": "blocked by database: no results to fetch",
+    "improved": "blocked by SQL validator: only SELECT queries are allowed, got SET; forbidden operation: SET"
+  },
+  {
+    "attack": "set_config",
+    "sql": "SELECT set_config('default_transaction_read_only', 'off', false)",
+    "baseline": "EXECUTED (1 rows)",
+    "improved": "blocked by SQL validator: function not allowed: set_config"
+  },
+  {
+    "attack": "row_lock",
+    "sql": "SELECT * FROM marts.fct_market_hourly LIMIT 1 FOR UPDATE",
+    "baseline": "blocked by database: write attempted in a read-only transaction",
+    "improved": "blocked by SQL validator: row locking (FOR UPDATE/SHARE) is not allowed; forbidden operation: LOCK"
+  }
+]
