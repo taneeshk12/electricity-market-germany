@@ -96,3 +96,33 @@ def test_fenced_json_is_tolerated() -> None:
 
 def test_config_repr_hides_key() -> None:
     assert "gsk_secret_key" not in repr(CFG)
+
+
+def _json_validate_failed():
+    body = {"error": {"code": "json_validate_failed", "failed_generation": "max completion tokens reached"}}
+    return groq.BadRequestError("err", response=httpx.Response(400, request=REQ), body=body)
+
+
+def test_json_validate_failed_is_retried_once() -> None:
+    llm, fake, _ = _llm(_json_validate_failed(), _resp('{"answer": "ok"}'))
+    assert llm.complete_json("s", "u").data == {"answer": "ok"}
+    assert len(fake.kwargs) == 2
+
+
+def test_json_validate_failed_twice_reports_code() -> None:
+    llm, *_ = _llm(_json_validate_failed(), _json_validate_failed())
+    with pytest.raises(LLMError, match="json_validate_failed"):
+        llm.complete_json("s", "u")
+
+
+def test_reasoning_budget_and_effort_are_sent() -> None:
+    cfg = LlmConfig(api_key="k", model="m", max_tokens=4096, reasoning_effort="low")
+    fake = FakeGroq(_resp('{"a": 1}'))
+    GroqLLM(cfg, client=fake).complete_json("s", "u")
+    assert fake.kwargs[0]["max_tokens"] == 4096 and fake.kwargs[0]["reasoning_effort"] == "low"
+
+
+def test_reasoning_effort_omitted_by_default() -> None:
+    fake = FakeGroq(_resp('{"a": 1}'))
+    GroqLLM(CFG, client=fake).complete_json("s", "u")
+    assert "reasoning_effort" not in fake.kwargs[0]

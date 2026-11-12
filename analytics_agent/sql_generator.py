@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from pydantic import BaseModel, ValidationError, model_validator
+from pydantic import BaseModel, ValidationError, field_validator, model_validator
 
 from analytics_agent.llm import JsonLLM, LLMOutputError, LLMResponse
 
@@ -33,7 +33,8 @@ Rules:
 
 ANSWER_SYSTEM = """You explain SQL query results about the German electricity market (DE-LU, SMARD data).
 Answer ONLY with JSON: {"answer": "<2-4 sentences>"}.
-Use only numbers that appear in RESULT; state units; mention if the result was truncated.
+Use only numbers that appear in RESULT, rounded for readability (prices to 2 decimals, shares as %,
+large MWh values as TWh = MWh / 1,000,000); state units; mention truncation only if the result was truncated.
 Do not speculate about causes that are not in the data."""
 
 
@@ -42,6 +43,11 @@ class SqlDraft(BaseModel):
     sql: str | None = None
     assumptions: str = ""
     reason: str = ""
+
+    @field_validator("assumptions", "reason", mode="before")
+    @classmethod
+    def _none_to_empty(cls, v: Any) -> str:
+        return "" if v is None else v  # models often send null for "no assumptions"
 
     @model_validator(mode="after")
     def _sql_when_answerable(self) -> SqlDraft:
@@ -83,7 +89,7 @@ def build_sql_prompt(
 
 
 def generate_sql(llm: JsonLLM, prompt: str) -> tuple[SqlDraft, LLMResponse]:
-    resp = llm.complete_json(SQL_SYSTEM, prompt, max_tokens=800)
+    resp = llm.complete_json(SQL_SYSTEM, prompt)
     try:
         return SqlDraft.model_validate(resp.data), resp
     except ValidationError as exc:
@@ -100,7 +106,7 @@ def explain_result(
         "truncated": result["truncated"] or result["row_count"] > max_rows,
     }
     prompt = f"QUESTION: {question}\n\nSQL:\n{sql}\n\nRESULT:\n{json.dumps(shown, default=str)}"
-    resp = llm.complete_json(ANSWER_SYSTEM, prompt, max_tokens=300)
+    resp = llm.complete_json(ANSWER_SYSTEM, prompt)
     answer = resp.data.get("answer")
     if not isinstance(answer, str) or not answer.strip():
         raise LLMOutputError("model returned no answer text")

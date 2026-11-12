@@ -19,7 +19,7 @@ class ScriptedLLM:
         self.responses = list(responses)
         self.calls: list[tuple[str, str]] = []
 
-    def complete_json(self, system: str, user: str, *, max_tokens: int = 1024) -> LLMResponse:
+    def complete_json(self, system: str, user: str, *, max_tokens: int | None = None) -> LLMResponse:
         self.calls.append((system, user))
         nxt = self.responses.pop(0)
         if isinstance(nxt, Exception):

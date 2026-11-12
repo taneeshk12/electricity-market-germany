@@ -162,8 +162,9 @@ Details: [`docs/agent_architecture.md`](docs/agent_architecture.md) · [`docs/se
 - **Tests**: 54 validator tests (10 valid queries, 35 unsafe inputs), agent and MCP tests with a scripted LLM,
   Groq retry/error tests, a Streamlit smoke test, and database-level tests of the read-only role.
 
-> Status: everything except live Groq calls is implemented and tested. End-to-end answers from Groq and the
-> accuracy evaluation follow once a `GROQ_API_KEY` is configured (Week 3).
+> Status: verified live with Groq `openai/gpt-oss-120b` on 9 smoke-test questions (7 answered correctly,
+> 2 correctly refused: a gas-price question and a "delete all rows" prompt injection). This is a smoke test, not a
+> benchmark; the systematic evaluation is Week 3. On Groq's free tier, rate limits (HTTP 429) add 5–25 s to some answers.
 
 ```bash
 pip install -r requirements-agent.txt   # or: make install

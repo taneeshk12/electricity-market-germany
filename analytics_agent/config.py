@@ -40,6 +40,9 @@ class LlmConfig:
     model: str
     timeout_s: float = 30.0
     max_retries: int = 3
+    # Reasoning models (e.g. gpt-oss) spend hidden reasoning tokens from this budget, so keep it generous.
+    max_tokens: int = 4096
+    reasoning_effort: str | None = None  # low | medium | high, only for models that support it
 
 
 def get_db_config() -> DbConfig:
@@ -76,6 +79,8 @@ def get_llm_config() -> LlmConfig:
         model=model,
         timeout_s=float(os.getenv("GROQ_TIMEOUT_S", "30")),
         max_retries=_int("GROQ_MAX_RETRIES", 3),
+        max_tokens=_int("GROQ_MAX_TOKENS", 4096),
+        reasoning_effort=os.getenv("GROQ_REASONING_EFFORT") or None,
     )
 
 

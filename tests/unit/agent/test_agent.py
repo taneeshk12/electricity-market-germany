@@ -92,3 +92,10 @@ def test_database_unreachable_is_reported(fake_db, monkeypatch) -> None:
     llm = ScriptedLLM({"answerable": True, "sql": GOOD_SQL}, {"answerable": True, "sql": GOOD_SQL})
     r = AnalyticsAgent(llm).answer("Average price?")
     assert r.status == "failed" and "could not connect" in r.error
+
+
+def test_null_optional_fields_are_accepted(fake_db) -> None:
+    # Regression: live gpt-oss-120b returned "assumptions": null and the agent failed.
+    llm = ScriptedLLM({"answerable": True, "sql": GOOD_SQL, "assumptions": None, "reason": None}, {"answer": "ok"})
+    r = AnalyticsAgent(llm).answer("Average price?")
+    assert r.status == "answered" and r.assumptions == ""

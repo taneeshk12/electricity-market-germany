@@ -41,7 +41,7 @@ class LLMResponse:
 
 
 class JsonLLM(Protocol):
-    def complete_json(self, system: str, user: str, *, max_tokens: int = 1024) -> LLMResponse: ...
+    def complete_json(self, system: str, user: str, *, max_tokens: int | None = None) -> LLMResponse: ...
 
 
 def _retry_after(exc: Exception, default: float) -> float:
@@ -50,6 +50,21 @@ def _retry_after(exc: Exception, default: float) -> float:
         return min(float(response.headers.get("retry-after")), 30.0)  # type: ignore[union-attr]
     except (AttributeError, TypeError, ValueError):
         return default
+
+
+def _error_body(exc: Exception) -> dict[str, Any]:
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        return body.get("error", body) if isinstance(body.get("error", body), dict) else {}
+    return {}
+
+
+def _error_code(exc: Exception) -> str | None:
+    return _error_body(exc).get("code")
+
+
+def _failed_generation(exc: Exception) -> str:
+    return str(_error_body(exc).get("failed_generation", ""))[:120]
 
 
 def parse_json_object(content: str | None) -> dict[str, Any]:
@@ -76,8 +91,10 @@ class GroqLLM:
         self.client = client or groq.Groq(api_key=cfg.api_key, timeout=cfg.timeout_s, max_retries=0)
         self._sleep = sleep
 
-    def complete_json(self, system: str, user: str, *, max_tokens: int = 1024) -> LLMResponse:
+    def complete_json(self, system: str, user: str, *, max_tokens: int | None = None) -> LLMResponse:
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+        extra = {"reasoning_effort": self.cfg.reasoning_effort} if self.cfg.reasoning_effort else {}
+        json_failures = 0
         for attempt in range(1, self.cfg.max_retries + 2):
             started = time.perf_counter()
             try:
@@ -85,8 +102,9 @@ class GroqLLM:
                     model=self.cfg.model,
                     messages=messages,
                     temperature=0,
-                    max_tokens=max_tokens,
+                    max_tokens=max_tokens or self.cfg.max_tokens,
                     response_format={"type": "json_object"},
+                    **extra,
                 )
             except TRANSIENT as exc:
                 if attempt > self.cfg.max_retries:
@@ -100,7 +118,13 @@ class GroqLLM:
             except groq.NotFoundError as exc:
                 raise LLMError(f"Groq model not found: {self.cfg.model} (check GROQ_MODEL)") from exc
             except groq.APIStatusError as exc:
-                raise LLMError(f"Groq request failed with HTTP {exc.status_code}") from exc
+                code = _error_code(exc)
+                # Groq rejects JSON-mode output that does not parse; one retry usually succeeds.
+                if code == "json_validate_failed" and json_failures == 0:
+                    json_failures += 1
+                    logger.warning("Groq json_validate_failed (%s), retrying once", _failed_generation(exc))
+                    continue
+                raise LLMError(f"Groq request failed with HTTP {exc.status_code} ({code or 'no code'})") from exc
 
             latency = (time.perf_counter() - started) * 1000
             choice = resp.choices[0] if resp.choices else None
