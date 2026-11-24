@@ -73,6 +73,18 @@ gitignored for size); the report can be rebuilt from the spec and measures.
 
 ![Negative prices page](docs/img/page3_negative_prices.png)
 
+## Power Price Risk Workbook (Excel)
+
+[`risk_workbook/`](risk_workbook/) exports daily prices from the warehouse into an Excel workbook with
+returns and rolling volatility, historical vs. parametric **Value-at-Risk** with an out-of-sample backtest
+(Kupiec test), a supplier-margin **scenario sheet built on What-If Data Tables**, and a dashboard that a
+**VBA macro** refreshes in one click (CSV import, pivot tables, pivot charts). All numbers are live formulas, and
+`make risk-verify` recalculates them in LibreOffice and checks about 7,700 values against a pandas reference.
+
+Headline: at 99 % the normal model's VaR is **24 % below** the historical one (excess kurtosis 3.8), and its
+backtest is rejected (23 breaches vs. 8.5 expected) while historical VaR passes (11).
+Details and assumptions: [`risk_workbook/README.md`](risk_workbook/README.md).
+
 ## Architecture
 
 ```mermaid

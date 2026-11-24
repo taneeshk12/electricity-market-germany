@@ -17,7 +17,8 @@ export
         test test-unit test-integration lint format \
         dbt-venv dbt-profile dbt-debug dbt-build dbt-test dbt-docs dbt-docs-serve \
         agent-role agent-check agent-metrics mcp-server app \
-        eval-dataset eval-run eval-safety eval-report
+        eval-dataset eval-run eval-safety eval-report \
+        risk-export risk-workbook risk-verify
 
 pipeline:  ## Run the full pipeline (extract -> transform -> quality -> load -> verify -> analysis)
 	$(PY) run_pipeline.py
@@ -151,3 +152,14 @@ eval-safety:  ## Deterministic SQL attack benchmark (no LLM)
 eval-report:  ## Score runs and write evaluation/results/evaluation_report.md
 	$(PY) -m evaluation.evaluate score
 	$(PY) -m evaluation.report
+
+# --- Power Price Risk Workbook ----------------------------------------------------------
+
+risk-export:  ## Export daily prices from the warehouse -> risk_workbook/output/prices_daily.csv
+	$(PY) -m risk_workbook.export
+
+risk-workbook:  ## Export + build risk_workbook/output/Power_Price_Risk_Workbook.xlsx
+	$(PY) -m risk_workbook.build_workbook
+
+risk-verify:  ## Recalculate the workbook in LibreOffice and check it against the pandas reference
+	$(PY) -m risk_workbook.verify
