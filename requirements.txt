@@ -5,3 +5,4 @@ python-dotenv>=1.0,<2.0
 requests>=2.31,<3.0
 holidays>=0.50       # German public holidays for dim_date (cross-check for the SQL calendar)
 pyarrow>=15.0        # parquet for data/processed
+openpyxl>=3.1,<4.0   # risk_workbook: Excel workbook with formulas, charts and Data Tables

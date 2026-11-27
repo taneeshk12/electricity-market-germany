@@ -17,7 +17,7 @@ ignore = [
 "evaluation/{build_dataset,safety_tests,report}.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["src", "analytics_agent"]
+known-first-party = ["src", "analytics_agent", "risk_workbook"]
 
 [tool.ruff.format]
 # The original pipeline modules use hand-aligned formatting; they are linted but not
